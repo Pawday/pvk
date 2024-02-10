@@ -1,13 +1,20 @@
 #include <format>
 #include <iostream>
+#include <limits>
 #include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
-#include <glad/vulkan.h>
+#include <cstddef>
+#include <cstring>
 
-#include "vk_loader.hh"
+#include "pvk/dso_loader.hh"
+#include "pvk/vk_api.hh"
+#include "pvk/vk_loader.hh"
 
-static bool glad_version_is_not_sane(int ver_maj, int ver_min)
+namespace {
+bool glad_version_is_not_sane(int ver_maj, int ver_min)
 {
     if (ver_maj < 0 || ver_min < 0) {
         char8_t fuck_msg_u8[] = u8"Ебаный GLAD, какого хуя блять?\n";
@@ -45,9 +52,9 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
     }
     return reinterpret_cast<GLADapiproc>(*proc_addres);
 }
+} // namespace
 
-std::optional<VKLoader> VKLoader::load(const std::string &library
-) noexcept
+std::optional<VKLoader> VKLoader::load(const std::string &library) noexcept
 {
     VKLoader output;
 

@@ -1,5 +1,3 @@
-#include "dso_loader.hh"
-
 #include <cstddef>
 #include <format>
 #include <iostream>
@@ -9,10 +7,12 @@
 
 #include <dlfcn.h>
 
+#include "pvk/dso_loader.hh"
+
 namespace {
 static void log_preload_error(const std::string &msg)
 {
-    std::cerr << std::format("DSO Preload error: \"{}\"\n", msg);
+    std::cerr << std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg);
 }
 } // namespace
 

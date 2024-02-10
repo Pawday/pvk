@@ -9,8 +9,9 @@
 #include <corecrt_malloc.h>
 #endif
 
-#include "vk_allocator.hh"
+#include "pvk/vk_allocator.hh"
 
+namespace {
 static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)
 {
 #if defined(USE_WINDOWS_ALIGNED_ALLOC)
@@ -34,13 +35,14 @@ warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 {
     return;
     std::cerr << std::format(
-        "VkAllocator: Driver requested undivisibly {} "
+        "[TRACE]: VkAllocator: Driver requested undivisibly {} "
         "bytes by alignment {}, allocating {} bytes instead\n",
         size,
         alignment,
         aligned_size
     );
 }
+} // namespace
 
 struct VkAllocator::ImplFriend
 {
@@ -59,6 +61,19 @@ struct VkAllocator::ImplFriend
             aligned_size = ((size / alignment) + 1) * alignment;
             warn_memsize_align(size, alignment, aligned_size);
         }
+
+        /*
+         * Nvidia Driver rely on allocation padding with 32 times more memory
+         * than requested.
+         * Discusting but okay, we can give them more
+         *
+         * also VK_LAYER_NV_optimus crushes when
+         * nevidia_memory_workaround_multiplyer < 64
+         */
+#if defined(GIVE_NEVIDIA_MORE_MEMORY)
+        constexpr size_t nevidia_memory_workaround_multiplyer = 64;
+        aligned_size += alignment * nevidia_memory_workaround_multiplyer;
+#endif
 
         void *new_block = aligned_alloc_wrap(alignment, aligned_size);
         if (new_block == nullptr) {

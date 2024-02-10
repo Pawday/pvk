@@ -1,4 +1,3 @@
-#include "dso_loader.hh"
 
 #include <cstddef>
 #include <format>
@@ -8,6 +7,8 @@
 #include <utility>
 
 #include <Windows.h>
+
+#include "pvk/dso_loader.hh"
 
 namespace {
 static void log_preload_error(const std::string &msg)

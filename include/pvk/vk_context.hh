@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <glad/vulkan.h>
+#include "vk_api.hh"
 
 #include "vk_allocator.hh"
 
@@ -32,9 +32,7 @@ struct VKContext
     struct Detail;
 
     std::unique_ptr<VkAllocator> m_allocator = nullptr;
-
     std::vector<VkExtensionProperties> m_vk_extensions;
-
     std::vector<VkLayerProperties> m_vk_layers;
     std::unordered_map<std::string, std::vector<VkExtensionProperties>>
         m_layer_extensions;

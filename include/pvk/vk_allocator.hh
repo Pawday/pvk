@@ -2,8 +2,9 @@
 
 #include <cstddef>
 
-#include <glad/vulkan.h>
 #include <unordered_map>
+
+#include "vk_api.hh"
 
 struct VkAllocator
 {

@@ -10,28 +10,41 @@ endfunction()
 project(VulkanLearn)
 
 
+add_library(glad OBJECT glad/src/vulkan.c)
+target_include_directories(glad PUBLIC glad/include)
+
+add_library(vk_allocator OBJECT vk_allocator.cc)
+target_include_directories(vk_allocator PRIVATE include)
+target_cxx_std(vk_allocator 20)
+target_link_libraries(vk_allocator PRIVATE glad)
+
 add_executable(Main)
-
-target_include_directories(Main PRIVATE glad/include)
+target_include_directories(Main PRIVATE include)
+target_link_libraries(Main PRIVATE glad)
 target_cxx_std(Main 20)
-
 target_sources(Main PRIVATE
     Main.cc
-    glad/src/vulkan.c
     vk_context.cc
-    vk_allocator.cc
     vk_loader.cc
 )
+
+target_link_libraries(Main PRIVATE vk_allocator)
 
 if(WIN32)
     target_sources(Main PRIVATE
         dso_loader_win32.cc
     )
-    target_compile_definitions(Main PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
 else()
     target_sources(Main PRIVATE
         dso_loader_linux.cc
     )
+endif()
+
+
+if(WIN32)
+    target_compile_definitions(vk_allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
+else()
+    target_compile_definitions(vk_allocator PRIVATE GIVE_NEVIDIA_MORE_MEMORY)
 endif()
 
 

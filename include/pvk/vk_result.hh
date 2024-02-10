@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <glad/vulkan.h>
+#include "vk_api.hh"
 
 static inline std::string vk_to_str(VkResult res)
 {

@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-#include "vk_context.hh"
-#include "vk_loader.hh"
+#include "pvk/vk_context.hh"
+#include "pvk/vk_loader.hh"
 
 std::optional<VKLoader> load_vulkan_linux(int argc, char const *const *argv)
 {
@@ -68,7 +68,7 @@ Application::Application()
 int main(int argc, char **argv)
 {
     std::optional<VKLoader> vk_loader_ctx = load_vulkan_linux(argc, argv);
-    //std::optional<VKLoader> vk_loader_ctx = load_vulkan_win32(argc, argv);
+    // std::optional<VKLoader> vk_loader_ctx = load_vulkan_win32(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";
         return EXIT_FAILURE;

@@ -39,24 +39,25 @@ target_sources(pvk_objects PRIVATE
     vk_context.cc
     vk_loader.cc
 )
-
 if(WIN32)
     target_sources(pvk_objects PRIVATE dso_loader_win32.cc)
 else()
     target_sources(pvk_objects PRIVATE dso_loader_linux.cc)
 endif()
 
-add_library(pvk_shared SHARED)
-target_link_libraries(pvk_shared INTERFACE pvk_headers)
-target_sources(pvk_shared PRIVATE
+add_library(Main_objects OBJECT
+    Main.cc
+)
+target_cxx_std(Main_objects 20)
+target_link_libraries(Main_objects PRIVATE pvk_headers)
+
+add_executable(Main)
+target_sources(Main PRIVATE
+    $<TARGET_OBJECTS:Main_objects>
     $<TARGET_OBJECTS:pvk_allocator>
     $<TARGET_OBJECTS:pvk_objects>
     $<TARGET_OBJECTS:glad>
 )
 
-add_executable(Main)
-target_cxx_std(Main 20)
-target_link_libraries(Main PRIVATE pvk_shared)
-target_sources(Main PRIVATE
-    Main.cc
-)
+
+#target_link_libraries(Main PRIVATE pvk_shared)

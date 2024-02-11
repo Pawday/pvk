@@ -16,8 +16,9 @@ std::optional<VKLoader> load_vulkan_linux(int argc, char const *const *argv)
         vk_so_linux_path = vk_so_linux_default_path;
     } else {
         vk_so_linux_path = argv[1];
-        std::cerr << std::format(
-            "Loading alternative Vulkan library from \"{}\"\n", vk_so_linux_path
+        std::cout << std::format(
+            "[INFO]: Loading alternative Vulkan library from \"{}\"\n",
+            vk_so_linux_path
         );
     }
     return VKLoader::load(vk_so_linux_path);

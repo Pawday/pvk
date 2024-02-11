@@ -4,6 +4,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -20,7 +21,7 @@
 
 struct VKContext::Detail
 {
-    static std::vector<VkLayerProperties> get_layers()
+    static std::vector<VkLayerProperties> get_instance_layers()
     {
         uint32_t nb_layers = 0;
         vkEnumerateInstanceLayerProperties(&nb_layers, nullptr);
@@ -30,7 +31,7 @@ struct VKContext::Detail
     }
 
     static std::vector<VkExtensionProperties>
-    get_extensions(const char *layer_name)
+        get_instance_extensions(const char *layer_name)
     {
         uint32_t nb_extensions = 0;
         vkEnumerateInstanceExtensionProperties(
@@ -44,21 +45,21 @@ struct VKContext::Detail
     }
 
     static std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-    get_extensions_for_layers(const std::vector<VkLayerProperties> &layers)
+        get_instance_extensions(const std::vector<VkLayerProperties> &layers)
     {
         std::unordered_map<std::string, std::vector<VkExtensionProperties>>
             output;
         for (const auto &layer : layers) {
             std::string layer_name = layer.layerName;
             std::vector<VkExtensionProperties> layer_extensions =
-                get_extensions(layer_name.c_str());
+                get_instance_extensions(layer_name.c_str());
             output.emplace(layer_name, std::move(layer_extensions));
         }
         return output;
     }
 
     static void
-    dump_extension(const std::vector<VkExtensionProperties> &extensions)
+        dump_extension(const std::vector<VkExtensionProperties> &extensions)
     {
         for (auto &gext : extensions) {
             std::cout << std::format(
@@ -72,16 +73,16 @@ struct VKContext::Detail
     static void dump_extensions_per_layer(const ExtMap &lay_exts)
     {
         for (auto &layer : lay_exts) {
-            std::cout << std::format("+{:-^50}+\n", layer.first);
+            std::cout << std::format("| {: <49}|\n", layer.first);
             for (auto &extension : layer.second) {
                 std::cout << std::format(
-                    "| {: <49}|\n", std::string(extension.extensionName)
+                    "|   {: <47}|\n", std::string(extension.extensionName)
                 );
             }
             if (layer.second.size() == 0) {
-                std::cout << std::format("| {: ^49}|\n", "(No extensions)");
+                std::cout << std::format("|   {: <47}|\n", "(No extensions)");
             }
-            std::cout << std::format("+{:-^50}+\n", "-");
+            std::cout << std::format("| {: <49}|\n", "");
         }
     }
 };
@@ -96,7 +97,7 @@ struct StringList
 
     template <size_t EXTEND = std::dynamic_extent>
     static constexpr std::optional<StringList>
-    create(const std::span<std::string_view, EXTEND> &strings) noexcept
+        create(const std::span<std::string_view, EXTEND> &strings) noexcept
     try {
         const size_t total_size = [&strings]() {
             size_t output = 0;
@@ -134,17 +135,15 @@ struct StringList
 
     ~StringList() = default;
 
-    std::vector<const char *> get() && = delete;
-    std::vector<const char *> get() const && = delete;
-
     std::vector<const char *> get() &
     {
         std::vector<const char *> output;
         output.reserve(offsets.size());
-
-        for (size_t offset : offsets) {
-            output.emplace_back(data.data() + offset);
-        }
+        auto make_pointer = [this](size_t offset) -> const char * {
+            return data.data() + offset;
+        };
+        auto pointers = offsets | std::views::transform(make_pointer);
+        std::ranges::copy(pointers, std::back_inserter(output));
         return output;
     }
 
@@ -157,26 +156,26 @@ struct StringList
 std::optional<VKContext> VKContext::create() noexcept
 {
     static std::vector<std::string_view> required_layers;
-    required_layers.emplace_back("VK_LAYER_KHRONOS_validation");
-    required_layers.emplace_back("VK_LAYER_NV_optimus");
+    // required_layers.emplace_back("VK_LAYER_KHRONOS_validation");
+    // required_layers.emplace_back("VK_LAYER_NV_optimus");
 
     static std::vector<std::string_view> required_extensions;
     required_extensions.emplace_back("VK_EXT_debug_utils");
-    // required_extensions.emplace_back("VK_EXT_validation_features");
 
-    std::vector<VkLayerProperties> vk_layers = Detail::get_layers();
-    std::vector<VkExtensionProperties> vk_extensions =
-        Detail::get_extensions(nullptr);
+    std::vector<VkLayerProperties> vk_layers = Detail::get_instance_layers();
+    std::vector<VkExtensionProperties> instance_extensions =
+        Detail::get_instance_extensions(nullptr);
 
-    std::cout << std::format("+{:-^50}+\n", "Global Extensions");
-    Detail::dump_extension(vk_extensions);
+    std::cout << std::format("+{:-^50}+\n", "Instance Extensions");
+    Detail::dump_extension(instance_extensions);
     std::cout << std::format("+{:-^50}+\n", "-");
-
-    std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-        layer_extensions = Detail::get_extensions_for_layers(vk_layers);
+    Detail::ExtMap layer_extensions =
+        Detail::get_instance_extensions(vk_layers);
     if (layer_extensions.size() != 0) {
-        std::cout << "Layer extensions:\n";
+        std::cout << '\n';
+        std::cout << std::format("+{:=^50}+\n", "Layers");
         Detail::dump_extensions_per_layer(layer_extensions);
+        std::cout << std::format("+{:=^50}+\n", "");
     }
 
     auto en_layer_names = StringList::create(std::span(required_layers));
@@ -192,7 +191,7 @@ std::optional<VKContext> VKContext::create() noexcept
     VkInstanceCreateInfo vk_instance_info{};
     vk_app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     vk_app_info.pApplicationName = "Some name";
-    vk_app_info.apiVersion = VK_MAKE_API_VERSION(1, 0, 0, 0);
+    vk_app_info.apiVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     vk_instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vk_instance_info.pApplicationInfo = &vk_app_info;
     vk_instance_info.enabledLayerCount = en_layer_names_ptrs.size();
@@ -213,6 +212,22 @@ std::optional<VKContext> VKContext::create() noexcept
         );
         return std::nullopt;
     }
+
+    std::cout << '\n';
+    std::cout << std::format("+{:=^50}+\n", "Devices");
+
+    uint32_t cnt_devices = 0;
+    vkEnumeratePhysicalDevices(new_instance, &cnt_devices, nullptr);
+    std::vector<VkPhysicalDevice> devices;
+    devices.resize(cnt_devices);
+    vkEnumeratePhysicalDevices(new_instance, &cnt_devices, devices.data());
+
+    for (auto device : devices) {
+        VkPhysicalDeviceProperties props{};
+        vkGetPhysicalDeviceProperties(device, &props);
+        std::cout << std::format("|{: ^50}|\n", std::string(props.deviceName));
+    }
+    std::cout << std::format("+{:=^50}+\n", "=");
 
     VKContext output;
     output.m_vk_instance = new_instance;

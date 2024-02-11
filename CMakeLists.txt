@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-
 function(target_cxx_std EXE_TARGET VERSION)
     set_property(TARGET ${EXE_TARGET} PROPERTY CXX_STANDARD ${VERSION})
     set_property(TARGET ${EXE_TARGET} PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -9,42 +8,55 @@ endfunction()
 
 project(VulkanLearn)
 
+add_library(glad_headers INTERFACE glad/src/vulkan.c)
+target_include_directories(glad_headers INTERFACE glad/include)
+
+add_library(pvk_headers INTERFACE)
+target_include_directories(pvk_headers INTERFACE include)
+target_link_libraries(pvk_headers INTERFACE glad_headers)
 
 add_library(glad OBJECT glad/src/vulkan.c)
-target_include_directories(glad PUBLIC glad/include)
+set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(glad PRIVATE glad_headers)
 
-add_library(vk_allocator OBJECT vk_allocator.cc)
-target_include_directories(vk_allocator PRIVATE include)
-target_cxx_std(vk_allocator 20)
-target_link_libraries(vk_allocator PRIVATE glad)
+add_library(pvk_allocator OBJECT vk_allocator.cc)
+set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_cxx_std(pvk_allocator 20)
+target_link_libraries(pvk_allocator PRIVATE pvk_headers)
+if(WIN32)
+    target_compile_definitions(pvk_allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
+else()
+    target_compile_definitions(pvk_allocator PRIVATE GIVE_NEVIDIA_MORE_MEMORY)
+endif()
 
-add_executable(Main)
-target_include_directories(Main PRIVATE include)
-target_link_libraries(Main PRIVATE glad)
-target_cxx_std(Main 20)
-target_sources(Main PRIVATE
-    Main.cc
+add_library(pvk_objects OBJECT)
+set_property(TARGET pvk_objects PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(pvk_objects PUBLIC pvk_headers)
+target_cxx_std(pvk_objects 20)
+target_sources(pvk_objects PRIVATE
+    vk_context.cc
+    vk_loader.cc
     vk_context.cc
     vk_loader.cc
 )
 
-target_link_libraries(Main PRIVATE vk_allocator)
-
 if(WIN32)
-    target_sources(Main PRIVATE
-        dso_loader_win32.cc
-    )
+    target_sources(pvk_objects PRIVATE dso_loader_win32.cc)
 else()
-    target_sources(Main PRIVATE
-        dso_loader_linux.cc
-    )
+    target_sources(pvk_objects PRIVATE dso_loader_linux.cc)
 endif()
 
+add_library(pvk_shared SHARED)
+target_link_libraries(pvk_shared INTERFACE pvk_headers)
+target_sources(pvk_shared PRIVATE
+    $<TARGET_OBJECTS:pvk_allocator>
+    $<TARGET_OBJECTS:pvk_objects>
+    $<TARGET_OBJECTS:glad>
+)
 
-if(WIN32)
-    target_compile_definitions(vk_allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
-else()
-    target_compile_definitions(vk_allocator PRIVATE GIVE_NEVIDIA_MORE_MEMORY)
-endif()
-
-
+add_executable(Main)
+target_cxx_std(Main 20)
+target_link_libraries(Main PRIVATE pvk_shared)
+target_sources(Main PRIVATE
+    Main.cc
+)

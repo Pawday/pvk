@@ -8,16 +8,17 @@ endfunction()
 
 project(VulkanLearn)
 
-add_library(glad_headers INTERFACE glad/src/vulkan.c)
+add_library(glad_headers INTERFACE)
+add_library(pvk_headers INTERFACE)
+
 target_include_directories(glad_headers INTERFACE glad/include)
 
-add_library(pvk_headers INTERFACE)
 target_include_directories(pvk_headers INTERFACE include)
 target_link_libraries(pvk_headers INTERFACE glad_headers)
 
-add_library(glad OBJECT glad/src/vulkan.c)
-set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(glad PRIVATE glad_headers)
+add_library(glad_objects OBJECT glad/src/vulkan.c)
+set_property(TARGET glad_objects PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(glad_objects PRIVATE glad_headers)
 
 add_library(pvk_allocator OBJECT vk_allocator.cc)
 set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -45,6 +46,28 @@ else()
     target_sources(pvk_objects PRIVATE dso_loader_posix.cc)
 endif()
 
+add_library(pvk_shared SHARED)
+set_property(TARGET pvk_shared PROPERTY OUTPUT_NAME "pvk")
+
+add_library(pvk_static STATIC)
+if(WIN32)
+    set_property(TARGET pvk_static PROPERTY OUTPUT_NAME "pvk_static")
+else()
+    set_property(TARGET pvk_static PROPERTY OUTPUT_NAME "pvk")
+endif()
+
+target_sources(pvk_static PRIVATE
+    $<TARGET_OBJECTS:pvk_allocator>
+    $<TARGET_OBJECTS:pvk_objects>
+    $<TARGET_OBJECTS:glad_objects>
+)
+
+target_sources(pvk_shared PRIVATE
+    $<TARGET_OBJECTS:pvk_allocator>
+    $<TARGET_OBJECTS:pvk_objects>
+    $<TARGET_OBJECTS:glad_objects>
+)
+
 add_library(Main_objects OBJECT
     Main.cc
 )
@@ -54,10 +77,6 @@ target_link_libraries(Main_objects PRIVATE pvk_headers)
 add_executable(Main)
 target_sources(Main PRIVATE
     $<TARGET_OBJECTS:Main_objects>
-    $<TARGET_OBJECTS:pvk_allocator>
-    $<TARGET_OBJECTS:pvk_objects>
-    $<TARGET_OBJECTS:glad>
 )
 
-
-#target_link_libraries(Main PRIVATE pvk_shared)
+target_link_libraries(Main PRIVATE pvk_static)

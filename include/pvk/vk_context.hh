@@ -37,6 +37,7 @@ struct VKContext
     std::unordered_map<std::string, std::vector<VkExtensionProperties>>
         m_layer_extensions;
 
-    VkInstance m_vk_instance{};
+    VkInstance m_vk_instance = VK_NULL_HANDLE;
+    VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
     std::stack<VkResult> m_vk_error_stack;
 };

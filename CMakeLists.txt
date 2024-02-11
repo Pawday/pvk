@@ -42,7 +42,7 @@ target_sources(pvk_objects PRIVATE
 if(WIN32)
     target_sources(pvk_objects PRIVATE dso_loader_win32.cc)
 else()
-    target_sources(pvk_objects PRIVATE dso_loader_linux.cc)
+    target_sources(pvk_objects PRIVATE dso_loader_posix.cc)
 endif()
 
 add_library(Main_objects OBJECT

@@ -1,4 +1,3 @@
-
 #include <cstddef>
 #include <format>
 #include <iostream>
@@ -72,6 +71,4 @@ SymLoader::~SymLoader() noexcept
             // Just log, nothing bad, can ignore
         }
     }
-    m_handle = NULL;
-    m_library_path.clear();
 }

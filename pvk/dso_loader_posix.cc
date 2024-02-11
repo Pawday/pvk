@@ -39,9 +39,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     return output;
 }
 
-SymLoader::SymLoader()
-{
-}
+SymLoader::SymLoader() = default;
 
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {

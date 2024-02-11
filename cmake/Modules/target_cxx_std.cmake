@@ -1,0 +1,5 @@
+function(target_cxx_std TARGET CXX_VERSION)
+    set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD ${CXX_VERSION})
+    set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD_REQUIRED ON)
+    set_property(TARGET ${TARGET} PROPERTY CXX_EXTENSIONS OFF)
+endfunction()

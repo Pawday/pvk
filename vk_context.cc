@@ -217,10 +217,32 @@ std::optional<VKContext> VKContext::create() noexcept
     std::cout << std::format("+{:=^50}+\n", "Devices");
 
     uint32_t cnt_devices = 0;
-    vkEnumeratePhysicalDevices(new_instance, &cnt_devices, nullptr);
+    VkResult dev_enum_status =
+        vkEnumeratePhysicalDevices(new_instance, &cnt_devices, nullptr);
+    if (dev_enum_status != VK_SUCCESS) {
+        std::cerr << std::format(
+            "[ERROR]: Counting vulkan physical devices failue: \"{}\"\n",
+            vk_to_str(dev_enum_status)
+        );
+        return std::nullopt;
+    }
+    if (cnt_devices == 0) {
+        std::cerr << "[ERROR]: No single vulkan physical device found\n";
+        return std::nullopt;
+    }
+
     std::vector<VkPhysicalDevice> devices;
     devices.resize(cnt_devices);
-    vkEnumeratePhysicalDevices(new_instance, &cnt_devices, devices.data());
+    dev_enum_status =
+        vkEnumeratePhysicalDevices(new_instance, &cnt_devices, devices.data());
+    if (dev_enum_status != VK_SUCCESS) {
+        std::cerr << std::format(
+            "[ERROR]: Enumerating vulkan physical devices failue: "
+            "\"{}\"\n",
+            vk_to_str(dev_enum_status)
+        );
+        return std::nullopt;
+    }
 
     for (auto device : devices) {
         VkPhysicalDeviceProperties props{};
@@ -231,6 +253,13 @@ std::optional<VKContext> VKContext::create() noexcept
 
     VKContext output;
     output.m_vk_instance = new_instance;
+
+    output.m_vk_device = devices[0];
+    VkPhysicalDeviceProperties dev_props{};
+    vkGetPhysicalDeviceProperties(output.m_vk_device, &dev_props);
+    std::cout << std::format(
+        "[INFO]: Selected device \"{}\"\n", dev_props.deviceName
+    );
     output.m_allocator = std::move(new_allocator);
     return output;
 }

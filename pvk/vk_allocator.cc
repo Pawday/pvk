@@ -31,7 +31,7 @@ static void aligned_free_wrap(void *p)
 }
 
 static void
-warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
+    warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 {
     return;
     std::cerr << std::format(
@@ -44,7 +44,9 @@ warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 }
 } // namespace
 
-struct VkAllocator::ImplFriend
+namespace pvk {
+
+struct Allocator::ImplFriend
 {
     static void *vkAllocationFunction(
         void *allocator_p,
@@ -53,7 +55,7 @@ struct VkAllocator::ImplFriend
         VkSystemAllocationScope allocationScope
     )
     {
-        VkAllocator *allocator = reinterpret_cast<VkAllocator *>(allocator_p);
+        Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
 
         size_t aligned_size = size;
 
@@ -63,16 +65,12 @@ struct VkAllocator::ImplFriend
         }
 
         /*
-         * Nvidia Driver rely on allocation padding with 32 times more memory
-         * than requested.
-         * Discusting but okay, we can give them more
-         *
-         * also VK_LAYER_NV_optimus crushes when
-         * nevidia_memory_workaround_multiplyer < 64
+         * VK_LAYER_NV_optimus produce heap buffer overflow
+         * if nevidia_memory_workaround_multiplier < 32
          */
 #if defined(GIVE_NEVIDIA_MORE_MEMORY)
-        constexpr size_t nevidia_memory_workaround_multiplyer = 64;
-        aligned_size += alignment * nevidia_memory_workaround_multiplyer;
+        constexpr size_t nevidia_memory_workaround_multiplier = 32;
+        aligned_size += alignment * nevidia_memory_workaround_multiplier;
 #endif
 
         void *new_block = aligned_alloc_wrap(alignment, aligned_size);
@@ -80,7 +78,7 @@ struct VkAllocator::ImplFriend
             return nullptr;
         }
 
-        VkAllocator::MemBlock new_block_meta;
+        Allocator::MemBlock new_block_meta;
         new_block_meta.align = alignment;
         new_block_meta.size = aligned_size;
         new_block_meta.vk_scope = allocationScope;
@@ -95,7 +93,7 @@ struct VkAllocator::ImplFriend
             return;
         }
 
-        VkAllocator *allocator = reinterpret_cast<VkAllocator *>(allocator_p);
+        Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
 
         size_t addr_to_free = reinterpret_cast<size_t>(pMemory);
         auto orig_block_it = allocator->m_blocks.find(addr_to_free);
@@ -119,7 +117,7 @@ struct VkAllocator::ImplFriend
         VkSystemAllocationScope allocationScope
     )
     {
-        VkAllocator *allocator = reinterpret_cast<VkAllocator *>(allocator_p);
+        Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         if (original_p == nullptr) {
             return vkAllocationFunction(
                 allocator_p, size, alignment, allocationScope
@@ -154,7 +152,7 @@ struct VkAllocator::ImplFriend
         VkSystemAllocationScope allocationScope
     )
     {
-        VkAllocator *allocator = reinterpret_cast<VkAllocator *>(allocator_p);
+        Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         (void)allocator;
         (void)size;
         (void)allocationType;
@@ -169,7 +167,7 @@ struct VkAllocator::ImplFriend
         VkSystemAllocationScope allocationScope
     )
     {
-        VkAllocator *allocator = reinterpret_cast<VkAllocator *>(allocator_p);
+        Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         (void)allocator;
         (void)size;
         (void)allocationType;
@@ -178,16 +176,17 @@ struct VkAllocator::ImplFriend
     }
 };
 
-VkAllocator::VkAllocator() noexcept
+Allocator::Allocator() noexcept
 {
     m_callbacks.pUserData = this;
-    m_callbacks.pfnAllocation = VkAllocator::ImplFriend::vkAllocationFunction;
+    m_callbacks.pfnAllocation = Allocator::ImplFriend::vkAllocationFunction;
     m_callbacks.pfnReallocation =
-        VkAllocator::ImplFriend::vkReallocationFunction;
-    m_callbacks.pfnFree = VkAllocator::ImplFriend::vkFreeFunction;
+        Allocator::ImplFriend::vkReallocationFunction;
+    m_callbacks.pfnFree = Allocator::ImplFriend::vkFreeFunction;
 
     m_callbacks.pfnInternalAllocation =
-        VkAllocator::ImplFriend::vkInternalAllocationNotification;
+        Allocator::ImplFriend::vkInternalAllocationNotification;
     m_callbacks.pfnInternalFree =
-        VkAllocator::ImplFriend::vkInternalFreeNotification;
+        Allocator::ImplFriend::vkInternalFreeNotification;
 }
+} // namespace pvk

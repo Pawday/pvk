@@ -8,7 +8,9 @@
 #include "pvk/vk_context.hh"
 #include "pvk/vk_loader.hh"
 
-std::optional<VKLoader> load_vulkan_linux(int argc, char const *const *argv)
+using namespace pvk;
+
+std::optional<Loader> load_vulkan_linux(int argc, char const *const *argv)
 {
     std::string_view vk_so_linux_default_path("/usr/lib/libvulkan.so");
     std::string vk_so_linux_path;
@@ -21,12 +23,12 @@ std::optional<VKLoader> load_vulkan_linux(int argc, char const *const *argv)
             vk_so_linux_path
         );
     }
-    return VKLoader::load(vk_so_linux_path);
+    return Loader::load(vk_so_linux_path);
 }
 
-std::optional<VKLoader> load_vulkan_win32(int argc, char const *const *argv)
+std::optional<Loader> load_vulkan_win32(int argc, char const *const *argv)
 {
-    return VKLoader::load("vulkan-1");
+    return Loader::load("vulkan-1");
 }
 
 struct Application
@@ -55,12 +57,12 @@ struct Application
     }
 
   private:
-    std::optional<VKContext> m_vk_context;
+    std::optional<Context> m_vk_context;
 };
 
 Application::Application()
 {
-    m_vk_context = VKContext::create();
+    m_vk_context = Context::create();
     if (!m_vk_context) {
         return;
     }
@@ -68,7 +70,7 @@ Application::Application()
 
 int main(int argc, char **argv)
 {
-    std::optional<VKLoader> vk_loader_ctx = load_vulkan_linux(argc, argv);
+    std::optional<Loader> vk_loader_ctx = load_vulkan_linux(argc, argv);
     // std::optional<VKLoader> vk_loader_ctx = load_vulkan_win32(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";

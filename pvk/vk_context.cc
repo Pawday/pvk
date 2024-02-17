@@ -1,14 +1,17 @@
 #include <algorithm>
+#include <array>
 #include <format>
 #include <iostream>
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <ranges>
+#include <ostream>
 #include <span>
+#include <stack>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -19,173 +22,337 @@
 #include "pvk/vk_context.hh"
 #include "pvk/vk_result.hh"
 
-struct VKContext::Detail
+#if defined(PVK_USE_EXT_DEBUG_UTILS)
+#include "pvk/extensions/VK_EXT_debug_utils.hh"
+#endif
+
+#include "string_pack.hh"
+
+namespace log {
+
+constexpr std::string ansi_color(uint8_t r, uint8_t g, uint8_t b)
 {
-    static std::vector<VkLayerProperties> get_instance_layers()
-    {
-        uint32_t nb_layers = 0;
-        vkEnumerateInstanceLayerProperties(&nb_layers, nullptr);
-        std::vector<VkLayerProperties> availableLayers(nb_layers);
-        vkEnumerateInstanceLayerProperties(&nb_layers, availableLayers.data());
-        return availableLayers;
-    }
-
-    static std::vector<VkExtensionProperties>
-        get_instance_extensions(const char *layer_name)
-    {
-        uint32_t nb_extensions = 0;
-        vkEnumerateInstanceExtensionProperties(
-            layer_name, &nb_extensions, nullptr
-        );
-        std::vector<VkExtensionProperties> availableLayers(nb_extensions);
-        vkEnumerateInstanceExtensionProperties(
-            layer_name, &nb_extensions, availableLayers.data()
-        );
-        return availableLayers;
-    }
-
-    static std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-        get_instance_extensions(const std::vector<VkLayerProperties> &layers)
-    {
-        std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-            output;
-        for (const auto &layer : layers) {
-            std::string layer_name = layer.layerName;
-            std::vector<VkExtensionProperties> layer_extensions =
-                get_instance_extensions(layer_name.c_str());
-            output.emplace(layer_name, std::move(layer_extensions));
-        }
-        return output;
-    }
-
-    static void
-        dump_extension(const std::vector<VkExtensionProperties> &extensions)
-    {
-        for (auto &gext : extensions) {
-            std::cout << std::format(
-                "| {: <49}|\n", std::string(gext.extensionName)
-            );
-        }
-    }
-
-    using ExtMap =
-        std::unordered_map<std::string, std::vector<VkExtensionProperties>>;
-    static void dump_extensions_per_layer(const ExtMap &lay_exts)
-    {
-        for (auto &layer : lay_exts) {
-            std::cout << std::format("| {: <49}|\n", layer.first);
-            for (auto &extension : layer.second) {
-                std::cout << std::format(
-                    "|   {: <47}|\n", std::string(extension.extensionName)
-                );
-            }
-            if (layer.second.size() == 0) {
-                std::cout << std::format("|   {: <47}|\n", "(No extensions)");
-            }
-            std::cout << std::format("| {: <49}|\n", "");
-        }
-    }
+    return std::format("\x1B[38;2;{};{};{}m", r, g, b);
 };
 
-struct StringList
+struct Segment
 {
-    StringList(const StringList &) = delete;
-    StringList &operator=(const StringList &) = delete;
+    size_t start;
+    size_t size;
+};
 
-    StringList(StringList &) = default;
-    StringList &operator=(StringList &&) = default;
+std::vector<Segment> split_ln(const std::string &data)
+{
+    size_t linebreaks = 0;
 
-    template <size_t EXTEND = std::dynamic_extent>
-    static constexpr std::optional<StringList>
-        create(const std::span<std::string_view, EXTEND> &strings) noexcept
-    try {
-        const size_t total_size = [&strings]() {
-            size_t output = 0;
-            for (auto &s : strings) {
-                output += s.size() + 1;
-            }
-            return output;
-        }();
-
-        std::vector<size_t> offsets;
-        offsets.reserve(strings.size());
-        std::vector<char> data;
-        data.reserve(total_size);
-
-        size_t offset = 0;
-
-        for (auto &s : strings) {
-            offsets.emplace_back(offset);
-            std::copy(begin(s), end(s), std::back_inserter(data));
-            data.emplace_back(0);
-            offset += s.size() + 1;
+    std::ranges::for_each(data, [&linebreaks](char c) {
+        if (c == '\n') {
+            linebreaks++;
         }
+    });
 
-        // Just in case
-        data.emplace_back(0);
-
-        StringList output;
-        output.data = std::move(data);
-        output.offsets = std::move(offsets);
-        return output;
-
-    } catch (...) {
-        return std::nullopt;
+    if (linebreaks == 0) {
+        return {{0, data.size()}};
     }
 
-    ~StringList() = default;
+    std::vector<Segment> output;
+    output.reserve(linebreaks);
 
-    std::vector<const char *> get() &
+    size_t start = 0;
+    size_t end = data.find_first_of('\n', start);
+
+    while (end != std::string::npos) {
+        if (start > data.size()) {
+            break;
+        }
+        size_t size = end - start;
+        output.push_back({start, size});
+
+        start = end + 1;
+        end = data.find_first_of('\n', start);
+    }
+
+    return output;
+}
+
+void log_lines_to(
+    std::ostream &stream,
+    const std::string prefix,
+    const std::string &message,
+    const std::vector<Segment> &segments
+)
+{
+    for (auto segment : segments) {
+        std::string_view line(message.data() + segment.start, segment.size);
+        stream << std::format("{}{}\n", prefix, line);
+    }
+}
+
+constexpr std::string ansi_reset()
+{
+    return "\x1B[0m";
+}
+
+void error(const std::string &message) noexcept
+try {
+    std::cerr << ansi_color(0xff, 0, 0);
+    auto lines = split_ln(message);
+    log_lines_to(std::cerr, "[pvk::Context] [ERROR]: ", message, lines);
+    std::cerr << ansi_reset();
+} catch (...) {
+}
+
+void warning(const std::string &message) noexcept
+try {
+    std::cerr << ansi_color(0xf6, 0xff, 0x00);
+    auto lines = split_ln(message);
+    log_lines_to(std::cout, "[pvk::Context] [WARN ]: ", message, lines);
+    std::cerr << ansi_reset();
+} catch (...) {
+}
+
+void info(const std::string &message) noexcept
+try {
+    std::cout << ansi_color(0x80, 0x80, 0x80);
+    auto lines = split_ln(message);
+    log_lines_to(std::cout, "[pvk::Context] [INFO ]: ", message, lines);
+    std::cout << ansi_reset();
+} catch (...) {
+}
+
+void trace(const std::string &message, const std::string &source = "") noexcept
+try {
+    std::cerr << ansi_color(0x00, 0x55, 0x00);
+    auto lines = split_ln(message);
+    log_lines_to(
+        std::cerr,
+        std::format("{}{} ", "[pvk::Context] [TRACE]: ", source),
+        message,
+        lines
+    );
+    std::cerr << ansi_reset();
+} catch (...) {
+}
+
+} // namespace log
+
+namespace pvk {
+
+std::unordered_set<std::string> get_layer_extensions(const char *layer_name)
+{
+    uint32_t nb_extensions = 0;
+    vkEnumerateInstanceExtensionProperties(layer_name, &nb_extensions, nullptr);
+    std::vector<VkExtensionProperties> layer_exts(nb_extensions);
+    vkEnumerateInstanceExtensionProperties(
+        layer_name, &nb_extensions, layer_exts.data()
+    );
+
+    std::unordered_set<std::string> output;
+    output.reserve(nb_extensions);
+    for (auto &ext : layer_exts) {
+        std::string ext_name(ext.extensionName);
+        if (output.contains(ext_name)) {
+            std::string dup_warn = std::format(
+                "Extention \"{}\" mentioned more than once", ext_name
+            );
+            log::warning(dup_warn);
+            continue;
+        }
+        output.emplace(std::move(ext_name));
+    }
+
+    return output;
+}
+
+namespace {
+static std::unordered_set<std::string> get_layers()
+{
+    uint32_t nb_layers = 0;
+    vkEnumerateInstanceLayerProperties(&nb_layers, nullptr);
+    std::vector<VkLayerProperties> availableLayers(nb_layers);
+    vkEnumerateInstanceLayerProperties(&nb_layers, availableLayers.data());
+
+    std::unordered_set<std::string> output;
+    output.reserve(nb_layers);
+
+    for (auto &layer : availableLayers) {
+
+        std::string layer_name(layer.layerName);
+        if (output.contains(layer_name)) {
+            log::warning(
+                std::format("Layer {} mentioned more than once", layer_name)
+            );
+            continue;
+        }
+        output.emplace(layer_name);
+    }
+    return output;
+}
+
+using LayerExtMap =
+    std::unordered_map<std::string, std::unordered_set<std::string>>;
+
+static LayerExtMap
+    get_layers_extensions(const std::unordered_set<std::string> &layer_names)
+{
+    LayerExtMap output;
+    for (const auto &layer_name : layer_names) {
+        std::unordered_set<std::string> layer_extensions =
+            get_layer_extensions(layer_name.c_str());
+
+        auto layer_extensions_list = output.find(layer_name);
+
+        if (layer_extensions_list == std::end(output)) {
+            std::unordered_set<std::string> new_extension_list;
+            new_extension_list.reserve(layer_extensions.size());
+            output.emplace(layer_name, std::move(new_extension_list));
+
+            layer_extensions_list = output.find(layer_name);
+            if (layer_extensions_list == std::end(output)) {
+                log::error("No memory for layer's extension list");
+                continue;
+            }
+        }
+
+        for (auto &extension : layer_extensions) {
+            layer_extensions_list->second.emplace(std::move(extension));
+        }
+    }
+    return output;
+}
+
+static void dump_extensions_per_layer(const LayerExtMap &lay_exts)
+{
+    bool first = true;
+    for (auto &layer : lay_exts) {
+        if (first) {
+            first = false;
+        } else {
+            log::info(std::format("| {: <49}|", ""));
+        }
+
+        log::info(std::format("| {: <49}|", layer.first));
+
+        for (auto &extension : layer.second) {
+            log::info(std::format("|   {: <47}|", std::string(extension)));
+        }
+        if (layer.second.size() == 0) {
+            log::info(std::format("|   {: <47}|", "(No extensions)"));
+        }
+    }
+}
+}; // namespace
+
+struct alignas(Context) Context::Impl
+{
+    static std::optional<Impl> create();
+
+    Impl(Impl &&) = default;
+    Impl &operator=(Impl &&) = default;
+
+    Impl(const Impl &) = delete;
+    Impl &operator=(const Impl &) = delete;
+
+    ~Impl()
     {
-        std::vector<const char *> output;
-        output.reserve(offsets.size());
-        auto make_pointer = [this](size_t offset) -> const char * {
-            return data.data() + offset;
+        if (m_allocator != nullptr) {
+            vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
         };
-        auto pointers = offsets | std::views::transform(make_pointer);
-        std::ranges::copy(pointers, std::back_inserter(output));
-        return output;
+    }
+
+    static Impl &cast_from(std::byte *data)
+    {
+        return *reinterpret_cast<Impl *>(data);
     }
 
   private:
-    StringList() noexcept = default;
-    std::vector<char> data;
-    std::vector<size_t> offsets;
+    Impl() = default;
+
+    std::unique_ptr<Allocator> m_allocator = nullptr;
+    std::vector<VkExtensionProperties> m_vk_extensions;
+    std::vector<VkLayerProperties> m_vk_layers;
+    std::unordered_map<std::string, std::vector<VkExtensionProperties>>
+        m_layer_extensions;
+
+    VkInstance m_vk_instance = VK_NULL_HANDLE;
+    VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
+    std::stack<VkResult> m_vk_error_stack;
 };
 
-std::optional<VKContext> VKContext::create() noexcept
+std::optional<Context::Impl> Context::Impl::create()
 {
-    static std::vector<std::string_view> required_layers;
-    // required_layers.emplace_back("VK_LAYER_KHRONOS_validation");
-    // required_layers.emplace_back("VK_LAYER_NV_optimus");
+    std::unordered_set<std::string> full_extesions_list;
+    static std::vector<std::string_view> enabled_layers;
+    static std::vector<std::string_view> enabled_extensions;
 
-    static std::vector<std::string_view> required_extensions;
-    required_extensions.emplace_back("VK_EXT_debug_utils");
+    std::unordered_set<std::string> vk_layers = get_layers();
 
-    std::vector<VkLayerProperties> vk_layers = Detail::get_instance_layers();
-    std::vector<VkExtensionProperties> instance_extensions =
-        Detail::get_instance_extensions(nullptr);
-
-    std::cout << std::format("+{:-^50}+\n", "Instance Extensions");
-    Detail::dump_extension(instance_extensions);
-    std::cout << std::format("+{:-^50}+\n", "-");
-    Detail::ExtMap layer_extensions =
-        Detail::get_instance_extensions(vk_layers);
-    if (layer_extensions.size() != 0) {
-        std::cout << '\n';
-        std::cout << std::format("+{:=^50}+\n", "Layers");
-        Detail::dump_extensions_per_layer(layer_extensions);
-        std::cout << std::format("+{:=^50}+\n", "");
+    auto implicit_extensions = get_layer_extensions(nullptr);
+    for (auto &implicit_extension : implicit_extensions) {
+        full_extesions_list.emplace(std::move(implicit_extension));
     }
 
-    auto en_layer_names = StringList::create(std::span(required_layers));
-    auto en_ext_names = StringList::create(std::span(required_extensions));
-    if (!en_layer_names || !en_ext_names) {
+    LayerExtMap layer_extensions = get_layers_extensions(vk_layers);
+
+    for (auto &layer : layer_extensions) {
+        for (auto &layer_ext_name : layer.second) {
+            full_extesions_list.emplace(std::move(layer_ext_name));
+        }
+    }
+
+    bool first = true;
+    auto line_break_if_not_first = [&first]() {
+        if (first) {
+            first = false;
+            return;
+        }
+        log::info("");
+    };
+
+    if (layer_extensions.size() != 0) {
+        line_break_if_not_first();
+        log::info(std::format("+{:=^50}+", "Layers"));
+        dump_extensions_per_layer(layer_extensions);
+        log::info(std::format("+{:=^50}+", ""));
+    }
+
+#if defined(PVK_USE_KHR_VALIDATION_LAYER)
+    if (vk_layers.contains("VK_LAYER_KHRONOS_validation")) {
+        line_break_if_not_first();
+        log::info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
+        enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
+    } else {
+        log::warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+    }
+#endif
+
+    if (full_extesions_list.size() != 0) {
+        line_break_if_not_first();
+        log::info(std::format("+{:=^50}+", "All instance extensions"));
+        for (auto &ext : full_extesions_list) {
+            log::info(std::format("| {: <49}|", ext));
+        }
+        log::info(std::format("+{:=^50}+", ""));
+    }
+
+#if defined(PVK_USE_EXT_DEBUG_UTILS)
+    bool has_debug_utils = full_extesions_list.contains("VK_EXT_debug_utils");
+    if (!has_debug_utils) {
+        log::warning("VK_EXT_debug_utils extension is not supported: Ignore");
+    }
+    enabled_extensions.emplace_back("VK_EXT_debug_utils");
+#endif
+
+    auto enabled_layer_names =
+        utils::StringPack::create(std::span(enabled_layers));
+    auto enabled_ext_names =
+        utils::StringPack::create(std::span(enabled_extensions));
+    if (!enabled_layer_names || !enabled_ext_names) {
         return std::nullopt;
     }
 
-    auto en_layer_names_ptrs = en_layer_names->get();
-    auto en_ext_names_ptrs = en_ext_names->get();
+    auto en_layer_names_ptrs = enabled_layer_names->get();
+    auto en_ext_names_ptrs = enabled_ext_names->get();
 
     VkApplicationInfo vk_app_info{};
     VkInstanceCreateInfo vk_instance_info{};
@@ -199,35 +366,45 @@ std::optional<VKContext> VKContext::create() noexcept
     vk_instance_info.enabledExtensionCount = en_ext_names_ptrs.size();
     vk_instance_info.ppEnabledExtensionNames = en_ext_names_ptrs.data();
 
-    auto new_allocator = std::make_unique<VkAllocator>();
+    auto new_allocator = std::make_unique<Allocator>();
     VkInstance new_instance{};
+
     VkResult instance_create_status = vkCreateInstance(
         &vk_instance_info, new_allocator->get_callbacks(), &new_instance
     );
 
     if (instance_create_status != VK_SUCCESS) {
-        std::cerr << std::format(
-            "Creating vulkan context failue: \"{}\"\n",
+        log::error(std::format(
+            "Creating vulkan context failue: \"{}\"",
             vk_to_str(instance_create_status)
-        );
+        ));
         return std::nullopt;
     }
 
-    std::cout << '\n';
-    std::cout << std::format("+{:=^50}+\n", "Devices");
+#if defined(PVK_USE_EXT_DEBUG_UTILS)
+    if (has_debug_utils) {
+        if (!pvk::DebugUtilsEXT::load(new_instance)) {
+            log::warning("Loading VK_EXT_debug_utils failue");
+        } else {
+            enabled_extensions.emplace_back("VK_EXT_debug_utils");
+            line_break_if_not_first();
+            log::info("Extension \"VK_EXT_debug_utils\" is enabled");
+        }
+    }
+#endif
 
     uint32_t cnt_devices = 0;
     VkResult dev_enum_status =
         vkEnumeratePhysicalDevices(new_instance, &cnt_devices, nullptr);
     if (dev_enum_status != VK_SUCCESS) {
-        std::cerr << std::format(
-            "[ERROR]: Counting vulkan physical devices failue: \"{}\"\n",
+        log::error(std::format(
+            "[ERROR]: Counting vulkan physical devices failue: \"{}\"",
             vk_to_str(dev_enum_status)
-        );
+        ));
         return std::nullopt;
     }
     if (cnt_devices == 0) {
-        std::cerr << "[ERROR]: No single vulkan physical device found\n";
+        log::error("[ERROR]: No single vulkan physical device found");
         return std::nullopt;
     }
 
@@ -236,37 +413,65 @@ std::optional<VKContext> VKContext::create() noexcept
     dev_enum_status =
         vkEnumeratePhysicalDevices(new_instance, &cnt_devices, devices.data());
     if (dev_enum_status != VK_SUCCESS) {
-        std::cerr << std::format(
+        log::error(std::format(
             "[ERROR]: Enumerating vulkan physical devices failue: "
-            "\"{}\"\n",
+            "\"{}\"",
             vk_to_str(dev_enum_status)
-        );
+        ));
         return std::nullopt;
     }
 
+    line_break_if_not_first();
+    log::info(std::format("+{:=^50}+", "Devices"));
     for (auto device : devices) {
         VkPhysicalDeviceProperties props{};
         vkGetPhysicalDeviceProperties(device, &props);
-        std::cout << std::format("|{: ^50}|\n", std::string(props.deviceName));
+        log::info(std::format("|{: ^50}|", std::string(props.deviceName)));
     }
-    std::cout << std::format("+{:=^50}+\n", "=");
+    log::info(std::format("+{:=^50}+", "="));
 
-    VKContext output;
-    output.m_vk_instance = new_instance;
-
-    output.m_vk_device = devices[0];
+    Context::Impl impl;
+    impl.m_vk_instance = new_instance;
+    impl.m_vk_device = devices[0];
     VkPhysicalDeviceProperties dev_props{};
-    vkGetPhysicalDeviceProperties(output.m_vk_device, &dev_props);
-    std::cout << std::format(
-        "[INFO]: Selected device \"{}\"\n", dev_props.deviceName
+    vkGetPhysicalDeviceProperties(impl.m_vk_device, &dev_props);
+    line_break_if_not_first();
+    log::info(
+        std::format("[INFO]: Selected device \"{}\"", dev_props.deviceName)
     );
-    output.m_allocator = std::move(new_allocator);
+    impl.m_allocator = std::move(new_allocator);
+
+    return impl;
+}
+
+std::optional<Context> Context::create() noexcept
+{
+    Context output;
+    auto impl = Context::Impl::create();
+
+    if (!impl) {
+        return std::nullopt;
+    }
+    new (output.impl) Context::Impl(std::move(*impl));
     return output;
 }
 
-VKContext::~VKContext()
+Context::Context() = default;
+
+Context::Context(Context &&other) noexcept
 {
-    if (m_allocator != nullptr) {
-        vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
-    };
+    new (impl) Context::Impl(std::move(Context::Impl::cast_from(other.impl)));
+    std::ranges::fill(other.impl, std::byte(0));
 }
+
+Context &Context::operator=(Context &&other) noexcept
+{
+    std::swap(impl, other.impl);
+    return *this;
+}
+
+Context::~Context()
+{
+    Context::Impl context(std::move(Impl::cast_from(impl)));
+}
+} // namespace pvk

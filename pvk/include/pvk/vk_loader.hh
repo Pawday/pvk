@@ -4,9 +4,12 @@
 #include <optional>
 #include <string>
 
+#include <pvk/symvis.hh>
+
 #include "dso_loader.hh"
 
-struct VKLoader
+namespace pvk {
+struct PVK_API Loader
 {
     struct VKVersion
     {
@@ -16,17 +19,18 @@ struct VKLoader
         Minor_t minor;
     };
 
-    using Optional = std::optional<VKLoader>;
+    using Optional = std::optional<Loader>;
     static Optional load(const std::string &library) noexcept;
 
-    VKLoader(const VKLoader &) = delete;
-    VKLoader(VKLoader &&) = default;
+    Loader(const Loader &) = delete;
+    Loader(Loader &&) = default;
 
-    ~VKLoader() noexcept;
+    ~Loader() noexcept;
 
   private:
-    VKLoader() = default;
+    Loader() = default;
 
     std::optional<SymLoader> m_vk_library;
     VKVersion m_version{0, 0};
 };
+} // namespace pvk

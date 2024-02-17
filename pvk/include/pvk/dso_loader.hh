@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+namespace pvk {
 struct SymLoader
 {
     static std::optional<SymLoader> load(const std::string &library_file);
@@ -35,3 +36,4 @@ struct SymLoader
     std::string m_library_path;
     void *m_handle = NULL;
 };
+} // namespace pvk

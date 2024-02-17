@@ -28,7 +28,7 @@ bool glad_version_is_not_sane(int ver_maj, int ver_min)
 
 static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
 {
-    SymLoader *vk_library = reinterpret_cast<SymLoader *>(library);
+    pvk::SymLoader *vk_library = reinterpret_cast<pvk::SymLoader *>(library);
 
     auto proc_addres = vk_library->load_sym(vk_proc_name);
     if (!proc_addres) {
@@ -54,9 +54,11 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
 }
 } // namespace
 
-std::optional<VKLoader> VKLoader::load(const std::string &library) noexcept
+namespace pvk {
+
+std::optional<Loader> Loader::load(const std::string &library) noexcept
 {
-    VKLoader output;
+    Loader output;
 
     std::optional<SymLoader> vk_library = SymLoader::load(library);
     if (!vk_library) {
@@ -103,9 +105,10 @@ std::optional<VKLoader> VKLoader::load(const std::string &library) noexcept
     return output;
 }
 
-VKLoader::~VKLoader() noexcept
+Loader::~Loader() noexcept
 {
     /*
      * gladUnloadVulkanUserPtr or something
      */
 }
+} // namespace pvk

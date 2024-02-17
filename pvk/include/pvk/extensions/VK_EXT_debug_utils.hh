@@ -1,3 +1,7 @@
+#if !defined(PVK_USE_EXT_DEBUG_UTILS)
+#error "Enable PVK_USE_EXT_DEBUG_UTILS if you want to use it"
+#endif
+
 #pragma once
 
 #include <cstddef>
@@ -15,7 +19,9 @@
 
 #define VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT 1000128000
 
-struct VkDebugUtilsEXT
+namespace pvk {
+
+struct DebugUtilsEXT
 {
     VK_DEFINE_NON_DISPATCHABLE_HANDLE(Messenger)
 
@@ -136,7 +142,7 @@ struct VkDebugUtilsEXT
         const char *pObjectName;
     };
 
-    static bool load() noexcept;
+    static bool load(VkInstance instance) noexcept;
 
     void BeginLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
     void EndLabel(VkCommandBuffer commandBuffer);
@@ -170,3 +176,5 @@ struct VkDebugUtilsEXT
         const MessengerCallbackData *pCallbackData
     );
 };
+
+} // namespace pvk

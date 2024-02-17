@@ -17,6 +17,8 @@ static void log_preload_error(const std::string &msg)
 }
 } // namespace
 
+namespace pvk {
+
 std::optional<SymLoader> SymLoader::load(const std::string &library_file)
 {
     char *preload_error = dlerror();
@@ -84,3 +86,4 @@ SymLoader::~SymLoader() noexcept
         }
     }
 }
+} // namespace pvk

@@ -6,7 +6,9 @@
 
 #include "vk_api.hh"
 
-struct VkAllocator
+namespace pvk {
+
+struct Allocator
 {
     struct MemBlock
     {
@@ -16,11 +18,11 @@ struct VkAllocator
         VkSystemAllocationScope vk_scope;
     };
 
-    VkAllocator() noexcept;
-    VkAllocator(const VkAllocator &) = delete;
-    VkAllocator &operator=(const VkAllocator &) = delete;
-    VkAllocator(VkAllocator &&) = delete;
-    VkAllocator &operator=(VkAllocator &&) = delete;
+    Allocator() noexcept;
+    Allocator(const Allocator &) = delete;
+    Allocator &operator=(const Allocator &) = delete;
+    Allocator(Allocator &&) = delete;
+    Allocator &operator=(Allocator &&) = delete;
 
     const VkAllocationCallbacks *get_callbacks() const
     {
@@ -37,3 +39,5 @@ struct VkAllocator
     std::unordered_map<MemBlock::Address, MemBlock> m_blocks;
     VkAllocationCallbacks m_callbacks{};
 };
+
+} // namespace pvk

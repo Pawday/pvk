@@ -1,43 +1,33 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <stack>
-#include <string>
-#include <unordered_map>
-#include <vector>
+
+#include <cstddef>
+
+#include <pvk/symvis.hh>
 
 #include "vk_api.hh"
 
-#include "vk_allocator.hh"
+namespace pvk {
 
-struct VKContext
+struct PVK_API alignas(std::max_align_t) Context
 {
-    static std::optional<VKContext> create() noexcept;
-    VKContext(VKContext &&) = default;
-    VKContext &operator=(VKContext &&) = default;
-    ~VKContext();
+    static std::optional<Context> create() noexcept;
+    Context(Context &&) noexcept;
+    Context &operator=(Context &&) noexcept;
+    ~Context();
 
-    VKContext(const VKContext &) = delete;
-    VKContext &operator=(const VKContext &) = delete;
+    Context(const Context &) = delete;
+    Context &operator=(const Context &) = delete;
 
-    std::stack<VkResult> get_error_stack() const
-    {
-        return m_vk_error_stack;
-    }
+    std::stack<VkResult> get_error_stack() const;
 
   private:
-    VKContext() = default;
+    Context();
+    static constexpr size_t impl_size = 512;
+    std::byte impl[impl_size];
 
-    struct Detail;
-
-    std::unique_ptr<VkAllocator> m_allocator = nullptr;
-    std::vector<VkExtensionProperties> m_vk_extensions;
-    std::vector<VkLayerProperties> m_vk_layers;
-    std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-        m_layer_extensions;
-
-    VkInstance m_vk_instance = VK_NULL_HANDLE;
-    VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
-    std::stack<VkResult> m_vk_error_stack;
+    struct Impl;
 };
+} // namespace pvk

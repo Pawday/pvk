@@ -71,7 +71,7 @@ Application::Application()
 int main(int argc, char **argv)
 {
     std::optional<Loader> vk_loader_ctx = load_vulkan_linux(argc, argv);
-    // std::optional<VKLoader> vk_loader_ctx = load_vulkan_win32(argc, argv);
+    //std::optional<Loader> vk_loader_ctx = load_vulkan_win32(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";
         return EXIT_FAILURE;

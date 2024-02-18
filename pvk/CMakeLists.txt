@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 3.20)
 
+project(pvk VERSION 0.0.1)
+
 option(PVK_USE_EXT_DEBUG_UTILS "Try load and use VK_EXT_debug_utils" OFF)
 option(PVK_USE_KHR_VALIDATION_LAYER "Try load and use VK_LAYER_KHRONOS_validation" OFF)
+
+
+set(PVK_BUILD_SHARED_DEFAULT OFF)
+set(PVK_BUILD_STATIC_DEFAULT ON)
+if (${BUILD_SHARED_LIBS})
+    set(PVK_BUILD_SHARED_DEFAULT ON)
+    set(PVK_BUILD_STATIC_DEFAULT OFF)
+endif()
 
 option(PVK_BUILD_SHARED "Build pvk shared library" ${PVK_BUILD_SHARED_DEFAULT})
 option(PVK_BUILD_STATIC "Build pvk static library" ${PVK_BUILD_STATIC_DEFAULT})
@@ -78,12 +88,7 @@ if (PVK_USE_KHR_VALIDATION_LAYER)
     target_compile_definitions(pvk_objects PRIVATE PVK_USE_KHR_VALIDATION_LAYER)
 endif()
 
-set(PVK_BUILD_SHARED_DEFAULT OFF)
-set(PVK_BUILD_STATIC_DEFAULT ON)
-if (${BUILD_SHARED_LIBS})
-    set(PVK_BUILD_SHARED_DEFAULT ON)
-    set(PVK_BUILD_STATIC_DEFAULT OFF)
-endif()
+
 
 message(STATUS "BUILD_SHARED_LIBS is \"${BUILD_SHARED_LIBS}\"")
 message(STATUS "PVK_BUILD_SHARED is ${PVK_BUILD_SHARED}")

@@ -26,3 +26,7 @@ target_link_libraries(pvk_static INTERFACE pvk_symvis_emptymacro)
 
 
 
+
+# ========= ARTEFACT VERSION ========= #
+set_property(TARGET pvk_static PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET pvk_static PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})

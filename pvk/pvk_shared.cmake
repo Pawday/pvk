@@ -26,3 +26,7 @@ if(WIN32)
 else()
     target_link_libraries(pvk_shared INTERFACE pvk_symvis_emptymacro)
 endif()
+
+# ========= ARTEFACT VERSION ========= #
+set_property(TARGET pvk_shared PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET pvk_shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})

@@ -77,6 +77,11 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    Loader::VKVersion version = vk_loader_ctx->get_version();
+    std::cout << std::format(
+        "Loaded Vulkan {}.{}\n", version.major, version.minor
+    );
+
     Application app;
     if (!app) {
         std::cerr << "App init failue\n";

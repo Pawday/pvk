@@ -22,6 +22,11 @@ struct PVK_API Loader
     using Optional = std::optional<Loader>;
     static Optional load(const std::string &library) noexcept;
 
+    VKVersion get_version() const
+    {
+        return m_version;
+    }
+
     Loader(const Loader &) = delete;
     Loader(Loader &&) = default;
 

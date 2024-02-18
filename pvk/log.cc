@@ -93,7 +93,7 @@ void error(const std::string &message) noexcept
 try {
     std::cerr << ansi_color(0xff, 0, 0);
     auto lines = split_ln(message);
-    log_lines_to(std::cerr, "[pvk::Context] [ERROR]: ", message, lines);
+    log_lines_to(std::cerr, "[pvk] [ERROR]: ", message, lines);
     std::cerr << ansi_reset();
 } catch (...) {
 }
@@ -102,7 +102,7 @@ void warning(const std::string &message) noexcept
 try {
     std::cerr << ansi_color(0xf6, 0xff, 0x00);
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[pvk::Context] [WARN ]: ", message, lines);
+    log_lines_to(std::cout, "[pvk] [WARN ]: ", message, lines);
     std::cerr << ansi_reset();
 } catch (...) {
 }
@@ -111,7 +111,7 @@ void info(const std::string &message) noexcept
 try {
     std::cout << ansi_color(0x80, 0x80, 0x80);
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[pvk::Context] [INFO ]: ", message, lines);
+    log_lines_to(std::cout, "[pvk] [INFO ]: ", message, lines);
     std::cout << ansi_reset();
 } catch (...) {
 }
@@ -122,7 +122,7 @@ try {
     auto lines = split_ln(message);
     log_lines_to(
         std::cerr,
-        std::format("{}{} ", "[pvk::Context] [TRACE]: ", source),
+        std::format("{}{} ", "[pvk] [TRACE]: ", source),
         message,
         lines
     );

@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <format>
-#include <iostream>
 #include <iterator>
 
 #if defined(USE_WINDOWS_ALIGNED_ALLOC)
@@ -10,6 +9,8 @@
 #endif
 
 #include "pvk/vk_allocator.hh"
+
+#include "log.hh"
 
 namespace {
 static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)
@@ -33,14 +34,17 @@ static void aligned_free_wrap(void *p)
 static void
     warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 {
+
+#pragma message "TODO: Deal with allocator align mismatch trace"
     return;
-    std::cerr << std::format(
-        "[TRACE]: VkAllocator: Driver requested undivisibly {} "
+
+    PVK_TRACE(std::format(
+        "Driver requested undivisibly {} "
         "bytes by alignment {}, allocating {} bytes instead\n",
         size,
         alignment,
         aligned_size
-    );
+    ));
 }
 } // namespace
 
@@ -98,10 +102,10 @@ struct Allocator::ImplFriend
         size_t addr_to_free = reinterpret_cast<size_t>(pMemory);
         auto orig_block_it = allocator->m_blocks.find(addr_to_free);
         if (orig_block_it == std::end(allocator->m_blocks)) {
-            std::cerr << std::format(
-                "VkAllocator: freeing of nonallocated addres 0x{:x}\n",
+            log::warning(std::format(
+                "VkAllocator: request freeing of nonallocated addres 0x{:x}\n",
                 addr_to_free
-            );
+            ));
             return;
         }
 
@@ -127,10 +131,10 @@ struct Allocator::ImplFriend
         size_t original_addr = reinterpret_cast<size_t>(original_p);
         auto orig_block_it = allocator->m_blocks.find(original_addr);
         if (orig_block_it == std::end(allocator->m_blocks)) {
-            std::cerr << std::format(
+            log::warning(std::format(
                 "VkAllocator: reallocating of nonallocated addres 0x{:x}\n",
                 original_addr
-            );
+            ));
             return nullptr;
         }
 
@@ -180,8 +184,7 @@ Allocator::Allocator() noexcept
 {
     m_callbacks.pUserData = this;
     m_callbacks.pfnAllocation = Allocator::ImplFriend::vkAllocationFunction;
-    m_callbacks.pfnReallocation =
-        Allocator::ImplFriend::vkReallocationFunction;
+    m_callbacks.pfnReallocation = Allocator::ImplFriend::vkReallocationFunction;
     m_callbacks.pfnFree = Allocator::ImplFriend::vkFreeFunction;
 
     m_callbacks.pfnInternalAllocation =

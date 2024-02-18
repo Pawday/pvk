@@ -45,6 +45,7 @@ target_sources(pvk_objects PRIVATE
     vk_loader.cc
     vk_context.cc
     vk_loader.cc
+    log.cc
 )
 if(WIN32)
     target_sources(pvk_objects PRIVATE dso_loader_win32.cc)
@@ -54,11 +55,16 @@ endif()
 
 if (PVK_ANY_OF_EXTENSIONS_IN_USE)
     add_library(pvk_extensions_objects OBJECT)
+    target_hide_symbols(pvk_extensions_objects)
+    target_cxx_std(pvk_extensions_objects 20)
     target_link_libraries(pvk_extensions_objects PRIVATE pvk_headers)
+
+    message(WARNING "TODO: remove target_include_directories with .cc file acces")
+    target_include_directories(pvk_extensions_objects PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 if (PVK_USE_EXT_DEBUG_UTILS)
-    include(extensions/VK_EXT_debug_utils.cmake)
+    include(extensions/debug_utils.cmake)
     target_compile_definitions(pvk_objects PRIVATE PVK_USE_EXT_DEBUG_UTILS)
     target_compile_definitions(pvk_extensions_objects PRIVATE PVK_USE_EXT_DEBUG_UTILS)
 endif()

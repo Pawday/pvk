@@ -25,7 +25,7 @@ struct PVK_API alignas(std::max_align_t) Context
 
   private:
     Context();
-    static constexpr size_t impl_size = 512;
+    static constexpr size_t impl_size = 1024;
     std::byte impl[impl_size];
 
     struct Impl;

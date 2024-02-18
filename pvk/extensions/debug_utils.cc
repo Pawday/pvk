@@ -1,4 +1,4 @@
-#include <pvk/extensions/VK_EXT_debug_utils.hh>
+#include <pvk/extensions/debug_utils.hh>
 
 using namespace pvk;
 

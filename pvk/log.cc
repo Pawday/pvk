@@ -1,20 +1,26 @@
-#pragma once
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iostream>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace log {
+#include "log.hh"
 
 constexpr std::string ansi_color(uint8_t r, uint8_t g, uint8_t b)
 {
     return std::format("\x1B[38;2;{};{};{}m", r, g, b);
 };
+
+constexpr std::string ansi_reset()
+{
+    return "\x1B[0m";
+}
+
+namespace log {
 
 struct Segment
 {
@@ -55,6 +61,15 @@ std::vector<Segment> split_ln(const std::string &data)
 
     return output;
 }
+
+std::vector<Segment> split_ln(const std::string &data);
+
+void log_lines_to(
+    std::ostream &stream,
+    const std::string prefix,
+    const std::string &message,
+    const std::vector<Segment> &segments
+);
 
 void log_lines_to(
     std::ostream &stream,

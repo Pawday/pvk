@@ -1,8 +1,12 @@
+#include <algorithm>
+#include <memory>
 #if !defined(PVK_USE_EXT_DEBUG_UTILS)
 #error "Enable PVK_USE_EXT_DEBUG_UTILS if you want to use it"
 #endif
 
 #pragma once
+
+#include <optional>
 
 #include <cstddef>
 #include <cstdint>
@@ -144,37 +148,55 @@ struct DebugUtilsEXT
 
     static bool load(VkInstance instance) noexcept;
 
-    void BeginLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
-    void EndLabel(VkCommandBuffer commandBuffer);
-    void InsertLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
+    static void BeginLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
+    static void EndLabel(VkCommandBuffer commandBuffer);
+    static void InsertLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
 
-    VkResult CreateMessenger(
+    static VkResult CreateMessenger(
         VkInstance instance,
         const MessengerCreateInfo *pCreateInfo,
         const VkAllocationCallbacks *pAllocator,
         Messenger *pMessenger
     );
 
-    void DestroyMessenger(
+    static void DestroyMessenger(
         VkInstance instance,
         Messenger messenger,
         const VkAllocationCallbacks *pAllocator
     );
 
-    void QueueInsertLabel(VkQueue queue, const Label *pLabelInfo);
-    void QueueBeginLabel(VkQueue queue, const Label *pLabelInfo);
-    void QueueEndLabel(VkQueue queue);
+    static void QueueInsertLabel(VkQueue queue, const Label *pLabelInfo);
+    static void QueueBeginLabel(VkQueue queue, const Label *pLabelInfo);
+    static void QueueEndLabel(VkQueue queue);
 
-    VkResult SetObjectName(VkDevice device, const ObjectNameInfo *pNameInfo);
+    static VkResult SetObjectName(VkDevice device, const ObjectNameInfo *pNameInfo);
 
-    VkResult SetObjectTag(VkDevice device, const ObjectTagInfo *pTagInfo);
+    static VkResult SetObjectTag(VkDevice device, const ObjectTagInfo *pTagInfo);
 
-    void SubmitMessage(
+    static void SubmitMessage(
         VkInstance instance,
         MessageSeverityFlagBits messageSeverity,
         MessageTypeFlags messageTypes,
         const MessengerCallbackData *pCallbackData
     );
+};
+
+struct DebugUtilsContext
+{
+    static std::unique_ptr<DebugUtilsContext>
+        create(VkInstance instance, VkAllocationCallbacks *allocator) noexcept;
+    ~DebugUtilsContext();
+
+    DebugUtilsContext(const DebugUtilsContext &) = delete;
+    DebugUtilsContext &operator=(const DebugUtilsContext &) = delete;
+    DebugUtilsContext(DebugUtilsContext &&) = delete;
+    DebugUtilsContext &operator=(DebugUtilsContext &&) = delete;
+
+  private:
+    DebugUtilsContext() noexcept;
+    VkInstance m_instance = VK_NULL_HANDLE;
+    DebugUtilsEXT::Messenger m_debug_messenger = VK_NULL_HANDLE;
+    VkAllocationCallbacks *m_alloc_callbacks = nullptr;
 };
 
 } // namespace pvk

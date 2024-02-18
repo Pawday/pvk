@@ -21,12 +21,11 @@
 #include "pvk/vk_result.hh"
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
-#include "pvk/extensions/VK_EXT_debug_utils.hh"
+#include "pvk/extensions/debug_utils.hh"
 #endif
 
+#include "log.hh"
 #include "string_pack.hh"
-#include "loh.hh"
-
 
 namespace pvk {
 
@@ -160,14 +159,15 @@ struct alignas(Context) Context::Impl
   private:
     Impl() = default;
 
-    std::unique_ptr<Allocator> m_allocator = nullptr;
-    std::vector<VkExtensionProperties> m_vk_extensions;
-    std::vector<VkLayerProperties> m_vk_layers;
-    std::unordered_map<std::string, std::vector<VkExtensionProperties>>
-        m_layer_extensions;
-
     VkInstance m_vk_instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
+
+    std::unique_ptr<Allocator> m_allocator = nullptr;
+
+#if(PVK_USE_EXT_DEBUG_UTILS)
+    std::unique_ptr<DebugUtilsContext> debug = nullptr;
+#endif
+
     std::stack<VkResult> m_vk_error_stack;
 };
 
@@ -340,10 +340,10 @@ std::optional<Context> Context::create() noexcept
 {
     Context output;
     auto impl = Context::Impl::create();
-
     if (!impl) {
         return std::nullopt;
     }
+
     new (output.impl) Context::Impl(std::move(*impl));
     return output;
 }

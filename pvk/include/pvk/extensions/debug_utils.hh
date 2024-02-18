@@ -1,12 +1,10 @@
-#include <algorithm>
-#include <memory>
 #if !defined(PVK_USE_EXT_DEBUG_UTILS)
 #error "Enable PVK_USE_EXT_DEBUG_UTILS if you want to use it"
 #endif
 
 #pragma once
 
-#include <optional>
+#include <memory>
 
 #include <cstddef>
 #include <cstdint>
@@ -54,11 +52,11 @@ struct DebugUtilsEXT
     typedef VkFlags MessengerCreateFlags;
 
     /* +---- Structures ----+ */
-    struct Label;
-    struct MessengerCallbackData;
-    struct ObjectTagInfo;
-    struct MessengerCreateInfo;
-    struct ObjectNameInfo;
+    class Label;
+    class MessengerCallbackData;
+    class ObjectTagInfo;
+    class MessengerCreateInfo;
+    class ObjectNameInfo;
 
     /* +---- Function Pointers ----+ */
     typedef VkBool32(VKAPI_PTR *PFN_vkDebugUtilsMessengerCallback)(
@@ -70,7 +68,7 @@ struct DebugUtilsEXT
 
     class Label
     {
-        VkStructureType sType =
+        [[maybe_unused]] VkStructureType sType =
             static_cast<VkStructureType>(VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT
             );
 
@@ -82,7 +80,7 @@ struct DebugUtilsEXT
 
     class MessengerCallbackData
     {
-        VkStructureType sType = static_cast<VkStructureType>(
+        [[maybe_unused]] VkStructureType sType = static_cast<VkStructureType>(
             VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT
         );
 
@@ -102,7 +100,7 @@ struct DebugUtilsEXT
 
     class ObjectTagInfo
     {
-        VkStructureType sType = static_cast<VkStructureType>(
+        [[maybe_unused]] VkStructureType sType = static_cast<VkStructureType>(
             VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT
         );
 
@@ -117,7 +115,7 @@ struct DebugUtilsEXT
 
     class MessengerCreateInfo
     {
-        VkStructureType sType = static_cast<VkStructureType>(
+        [[maybe_unused]] VkStructureType sType = static_cast<VkStructureType>(
             VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT
         );
 
@@ -125,7 +123,7 @@ struct DebugUtilsEXT
         const void *pNext;
 
       private:
-        MessengerCreateFlags flags = 0;
+        [[maybe_unused]] MessengerCreateFlags flags = 0; // Vulkan 1.3 reserved field
 
       public:
         MessageSeverityFlags messageSeverity;
@@ -136,7 +134,7 @@ struct DebugUtilsEXT
 
     class ObjectNameInfo
     {
-        VkStructureType sType = static_cast<VkStructureType>(
+        [[maybe_unused]] VkStructureType sType = static_cast<VkStructureType>(
             VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT
         );
 
@@ -148,9 +146,11 @@ struct DebugUtilsEXT
 
     static bool load(VkInstance instance) noexcept;
 
-    static void BeginLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
+    static void
+        BeginLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
     static void EndLabel(VkCommandBuffer commandBuffer);
-    static void InsertLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
+    static void
+        InsertLabel(VkCommandBuffer commandBuffer, const Label *pLabelInfo);
 
     static VkResult CreateMessenger(
         VkInstance instance,
@@ -169,9 +169,11 @@ struct DebugUtilsEXT
     static void QueueBeginLabel(VkQueue queue, const Label *pLabelInfo);
     static void QueueEndLabel(VkQueue queue);
 
-    static VkResult SetObjectName(VkDevice device, const ObjectNameInfo *pNameInfo);
+    static VkResult
+        SetObjectName(VkDevice device, const ObjectNameInfo *pNameInfo);
 
-    static VkResult SetObjectTag(VkDevice device, const ObjectTagInfo *pTagInfo);
+    static VkResult
+        SetObjectTag(VkDevice device, const ObjectTagInfo *pTagInfo);
 
     static void SubmitMessage(
         VkInstance instance,

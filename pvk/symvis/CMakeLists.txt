@@ -5,8 +5,7 @@ add_library(pvk_symvis_attribute INTERFACE)
 target_include_directories(pvk_symvis_attribute INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/attribute/include>)
 
 add_library(pvk_symvis_emptymacro INTERFACE)
-target_include_directories(pvk_symvis_emptymacro INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/noexport/include>)
-
+target_include_directories(pvk_symvis_emptymacro INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/emptymacro/include>)
 
 if (WIN32)
     add_library(pvk_symvis_declspec INTERFACE)

@@ -26,7 +26,13 @@ target_sources(Main PRIVATE
 )
 
 if (WIN32)
+    if(NOT TARGET pvk_static)
+        message(FATAL_ERROR "No pvk_static target")
+    endif()
     target_link_libraries(Main PRIVATE pvk_static)
 else()
+    if(NOT TARGET pvk_shared)
+        message(FATAL_ERROR "No pvk_shared target")
+    endif()
     target_link_libraries(Main PRIVATE pvk_shared)
 endif()

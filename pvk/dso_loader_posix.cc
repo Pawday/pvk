@@ -37,8 +37,8 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = dlopen(library_file.c_str(), RTLD_NOW);
     char *load_status = dlerror();
     if (load_status != NULL) {
-        log::error(std::format(
-            "Error loading library from: \"{}\" reason \"{}\"\n",
+        log::warning(std::format(
+            "Failue loading library from: \"{}\" reason \"{}\"\n",
             library_file,
             load_status
         ));

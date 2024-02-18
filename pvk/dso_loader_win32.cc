@@ -1,5 +1,4 @@
 #include <format>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
@@ -10,24 +9,37 @@
 
 #include "pvk/dso_loader.hh"
 
+#include "log.hh"
+
 namespace {
-static void log_preload_error(const std::string &msg)
-{
-    std::cerr << std::format("DSO Preload error: \"{}\"\n", msg);
+/*
+ *  +---------------+
+ *  | Symmetry stub |
+ *  +---------------+
+ */
+
+static void log_unload_failue(const std::string &lib_name)
+try {
+    log::warning(std::format("Unload library {} failue", lib_name));
+} catch (...) {
 }
+
 } // namespace
+
+namespace pvk {
 
 std::optional<SymLoader> SymLoader::load(const std::string &library_file)
 {
     void *new_handle = LoadLibraryA(library_file.c_str());
+    DWORD last_error_code = GetLastError();
     if (new_handle == NULL) {
-        std::cerr << std::format(
-            "Error loading library from: \"{}\" reason \"Microsoft\"\n",
-            library_file
-        );
+        log::warning(std::format(
+            "Failue loading library from: \"{}\" error code 0x{:X}",
+            library_file,
+            last_error_code
+        ));
         return std::nullopt;
     }
-
 
     SymLoader output;
     output.m_handle = new_handle;
@@ -35,13 +47,17 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     return output;
 }
 
+/*  +---------------+
+ *  | Symmetry stub |
+ *  +---------------+ */
+
 SymLoader::SymLoader() = default;
 
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {
     m_library_path = std::move(other.m_library_path);
-
     m_handle = other.m_handle;
+
     other.m_handle = NULL;
     other.m_moved = true;
 }
@@ -56,6 +72,12 @@ std::optional<void *> SymLoader::load_sym(const std::string &symname)
     return new_sym;
 }
 
+/*
+ *  +---------------+
+ *  | Symmetry stub |
+ *  +---------------+
+ */
+
 SymLoader::~SymLoader() noexcept
 {
     if (m_moved) {
@@ -64,12 +86,7 @@ SymLoader::~SymLoader() noexcept
 
     int unload_status = FreeLibrary(reinterpret_cast<HMODULE>(m_handle));
     if (unload_status == 0) {
-        try {
-            std::cerr << std::format(
-                "Unload library {} faild - just saying\n", m_library_path
-            );
-        } catch (...) {
-            // Just log, nothing bad, can ignore
-        }
+        log_unload_failue(m_library_path);
     }
 }
+} // namespace pvk

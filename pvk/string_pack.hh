@@ -7,7 +7,6 @@
 #include <ranges>
 #include <span>
 #include <string_view>
-#include <strings.h>
 #include <utility>
 #include <vector>
 

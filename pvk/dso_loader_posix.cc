@@ -1,5 +1,4 @@
 #include <format>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
@@ -10,11 +9,21 @@
 
 #include "pvk/dso_loader.hh"
 
+#include "log.hh"
+
 namespace {
 static void log_preload_error(const std::string &msg)
-{
-    std::cerr << std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg);
+try {
+    log::warning(std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg));
+} catch (...) {
 }
+
+static void log_unload_failue(const std::string &lib_name)
+try {
+    log::warning(std::format("Unload library {} failue", lib_name));
+} catch (...) {
+}
+
 } // namespace
 
 namespace pvk {
@@ -28,11 +37,11 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = dlopen(library_file.c_str(), RTLD_NOW);
     char *load_status = dlerror();
     if (load_status != NULL) {
-        std::cerr << std::format(
+        log::error(std::format(
             "Error loading library from: \"{}\" reason \"{}\"\n",
             library_file,
             load_status
-        );
+        ));
         return std::nullopt;
     }
 
@@ -47,8 +56,8 @@ SymLoader::SymLoader() = default;
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {
     m_library_path = std::move(other.m_library_path);
-
     m_handle = other.m_handle;
+
     other.m_handle = NULL;
     other.m_moved = true;
 }
@@ -77,13 +86,7 @@ SymLoader::~SymLoader() noexcept
 
     int unload_status = dlclose(m_handle);
     if (unload_status != 0) {
-        try {
-            std::cerr << std::format(
-                "Unload library {} faild - just saying\n", m_library_path
-            );
-        } catch (...) {
-            // Just log, nothing bad, can ignore
-        }
+        log_unload_failue(m_library_path);
     }
 }
 } // namespace pvk

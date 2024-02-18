@@ -19,11 +19,12 @@ VkBool32 callback(
     void *pUserData
 )
 {
+    log::debug(std::format("[VkDebugUtils] {}", pCallbackData->pMessage));
+    return VK_FALSE;
 }
 
-std::unique_ptr<DebugUtilsContext> DebugUtilsContext::create(
-    VkInstance instance, VkAllocationCallbacks *allocator
-) noexcept
+std::unique_ptr<DebugUtilsContext>
+    DebugUtilsContext::create(const VkAllocationCallbacks *allocator) noexcept
 {
     std::unique_ptr<DebugUtilsContext> output =
         std::unique_ptr<DebugUtilsContext>(new DebugUtilsContext());
@@ -31,7 +32,6 @@ std::unique_ptr<DebugUtilsContext> DebugUtilsContext::create(
         return nullptr;
     }
 
-    output->m_instance = instance;
     output->m_alloc_callbacks = allocator;
 
     using MsgTFlag = DebugUtilsEXT::MessageTypeFlagBits;
@@ -47,39 +47,88 @@ std::unique_ptr<DebugUtilsContext> DebugUtilsContext::create(
     log_level |= static_cast<VkFlags>(LogLevelFlag::INFO_BIT);
     log_level |= static_cast<VkFlags>(LogLevelFlag::VERBOSE_BIT);
 
-    DebugUtilsEXT::MessengerCreateInfo info{};
-    info.pNext = nullptr;
-    info.messageType = msgs;
-    info.messageSeverity = log_level;
-    info.pfnUserCallback = callback;
-    info.pUserData = output.get();
+    output->m_info.pNext = nullptr;
+    output->m_info.messageType = msgs;
+    output->m_info.messageSeverity = log_level;
+    output->m_info.pfnUserCallback = callback;
+    output->m_info.pUserData = output.get();
 
-    DebugUtilsEXT::Messenger new_messenger = VK_NULL_HANDLE;
-
-    auto create_status = DebugUtilsEXT::CreateMessenger(
-        output->m_instance, &info, output->m_alloc_callbacks, &new_messenger
-    );
-    if (create_status != VK_SUCCESS) {
-        log::warning(std::format(
-            "DebugUtilsEXT::Messenger - {}", vk_to_str(create_status)
-        ));
-        return nullptr;
-    }
-
-    output->m_debug_messenger = new_messenger;
     return output;
 }
 
-DebugUtilsContext::~DebugUtilsContext()
+bool DebugUtilsContext::attach_to(VkInstanceCreateInfo &instance_info) noexcept
 {
-    if (m_debug_messenger != VK_NULL_HANDLE) {
-        DebugUtilsEXT::DestroyMessenger(
-            m_instance, m_debug_messenger, m_alloc_callbacks
-        );
-        m_instance = VK_NULL_HANDLE;
-        m_debug_messenger = VK_NULL_HANDLE;
-        m_alloc_callbacks = nullptr;
+    if (m_debug_messenger.val() != VK_NULL_HANDLE) {
+        return false;
     }
+
+    if (m_instance_spy) {
+        log::debug("DebugUtilsContext already attached to instance_info");
+        return false;
+    }
+
+    VkBaseOutStructure *info_addr =
+        reinterpret_cast<VkBaseOutStructure *>(&m_info);
+
+    VkBaseOutStructure *cur_node =
+        reinterpret_cast<VkBaseOutStructure *>(&instance_info);
+    const VkBaseOutStructure *next = cur_node->pNext;
+
+    while (next != nullptr) {
+        if (next == info_addr) {
+            log::warning("DebugUtilsContext already attached"
+                         "to instance_info somehow");
+            m_instance_spy = true;
+            return true;
+        }
+
+        cur_node = cur_node->pNext;
+        next = cur_node->pNext;
+    }
+
+    cur_node->pNext = info_addr;
+
+    m_instance_spy = true;
+    return true;
+}
+
+DebugUtilsContext::Messenger::~Messenger() noexcept
+{
+    if (m_value != VK_NULL_HANDLE) {
+        DebugUtilsEXT::DestroyMessenger(m_instance, m_value, m_callbacks);
+    }
+}
+
+bool DebugUtilsContext::create_messenger(
+    VkInstance instance, const VkAllocationCallbacks *callbacks
+) noexcept
+{
+    if (m_debug_messenger.val() != VK_NULL_HANDLE) {
+        return false;
+    }
+
+    if (instance == VK_NULL_HANDLE) {
+        return false;
+    }
+
+    if (m_instance_spy) {
+        return false;
+    }
+
+    DebugUtilsEXT::Messenger new_messenger = VK_NULL_HANDLE;
+    auto create_status = DebugUtilsEXT::CreateMessenger(
+        instance, &m_info, m_alloc_callbacks, &new_messenger
+    );
+    if (create_status != VK_SUCCESS) {
+        log::warning(
+            std::format("Messager create failue - {}", vk_to_str(create_status))
+        );
+        return false;
+    }
+
+    m_debug_messenger = Messenger(new_messenger, instance, callbacks);
+
+    return true;
 }
 
 } // namespace pvk

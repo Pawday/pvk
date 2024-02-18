@@ -146,6 +146,9 @@ struct alignas(Context) Context::Impl
 
     ~Impl()
     {
+        {
+            auto primary_debugger = std::move(debugger);
+        }
         if (m_allocator != nullptr) {
             vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
         };
@@ -164,8 +167,10 @@ struct alignas(Context) Context::Impl
 
     std::unique_ptr<Allocator> m_allocator = nullptr;
 
-#if(PVK_USE_EXT_DEBUG_UTILS)
-    std::unique_ptr<DebugUtilsContext> debug = nullptr;
+#if (PVK_USE_EXT_DEBUG_UTILS)
+    std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
+    std::unique_ptr<DebugUtilsContext> debugger = nullptr;
+
 #endif
 
     std::stack<VkResult> m_vk_error_stack;
@@ -201,9 +206,17 @@ std::optional<Context::Impl> Context::Impl::create()
         log::info("");
     };
 
+    auto debug_line_break_if_not_first = [&first]() {
+        if (first) {
+            first = false;
+            return;
+        }
+        log::debug("");
+    };
+
     if (layer_extensions.size() != 0) {
         line_break_if_not_first();
-        log::info(std::format("+{:=^50}+", "Layers"));
+        log::info(std::format("+{:=^50}+", " Layers "));
         dump_extensions_per_layer(layer_extensions);
         log::info(std::format("+{:=^50}+", ""));
     }
@@ -220,19 +233,40 @@ std::optional<Context::Impl> Context::Impl::create()
 
     if (full_extesions_list.size() != 0) {
         line_break_if_not_first();
-        log::info(std::format("+{:=^50}+", "All instance extensions"));
+        log::info(std::format("+{:=^50}+", " All instance extensions "));
         for (auto &ext : full_extesions_list) {
             log::info(std::format("| {: <49}|", ext));
         }
         log::info(std::format("+{:=^50}+", ""));
     }
 
+    Context::Impl impl;
+    impl.m_allocator = std::make_unique<Allocator>();
+
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     bool has_debug_utils = full_extesions_list.contains("VK_EXT_debug_utils");
-    if (!has_debug_utils) {
+    bool debug_utils_load_status = false;
+    if (has_debug_utils) {
+        enabled_extensions.emplace_back("VK_EXT_debug_utils");
+    } else {
         log::warning("VK_EXT_debug_utils extension is not supported: Ignore");
     }
-    enabled_extensions.emplace_back("VK_EXT_debug_utils");
+
+    if (has_debug_utils) {
+        impl.instance_spy =
+            DebugUtilsContext::create(impl.m_allocator->get_callbacks());
+        impl.debugger =
+            DebugUtilsContext::create(impl.m_allocator->get_callbacks());
+    }
+
+    if (has_debug_utils && impl.instance_spy == nullptr) {
+        log::warning("Creating early debug messenger failue");
+    }
+
+    if (has_debug_utils && impl.debugger == nullptr) {
+        log::warning("Creating primary debug messenger failue");
+    }
+
 #endif
 
     auto enabled_layer_names =
@@ -258,11 +292,27 @@ std::optional<Context::Impl> Context::Impl::create()
     vk_instance_info.enabledExtensionCount = en_ext_names_ptrs.size();
     vk_instance_info.ppEnabledExtensionNames = en_ext_names_ptrs.data();
 
-    auto new_allocator = std::make_unique<Allocator>();
-    VkInstance new_instance{};
+#if defined(PVK_USE_EXT_DEBUG_UTILS)
+    bool instance_debug_attach_status = false;
 
+    if (has_debug_utils && impl.instance_spy != nullptr) {
+        instance_debug_attach_status =
+            impl.instance_spy->attach_to(vk_instance_info);
+    }
+
+    if (has_debug_utils && !instance_debug_attach_status) {
+        log::warning("Attaching early messenger failue");
+    }
+
+    if (has_debug_utils && instance_debug_attach_status) {
+        debug_line_break_if_not_first();
+        log::debug("Early messenger attached to instance");
+    }
+#endif
+
+    VkInstance new_instance{};
     VkResult instance_create_status = vkCreateInstance(
-        &vk_instance_info, new_allocator->get_callbacks(), &new_instance
+        &vk_instance_info, impl.m_allocator->get_callbacks(), &new_instance
     );
 
     if (instance_create_status != VK_SUCCESS) {
@@ -275,14 +325,34 @@ std::optional<Context::Impl> Context::Impl::create()
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     if (has_debug_utils) {
-        if (!pvk::DebugUtilsEXT::load(new_instance)) {
-            log::warning("Loading VK_EXT_debug_utils failue");
-        } else {
-            enabled_extensions.emplace_back("VK_EXT_debug_utils");
-            line_break_if_not_first();
-            log::info("Extension \"VK_EXT_debug_utils\" is enabled");
-        }
+        debug_utils_load_status = pvk::DebugUtilsEXT::load(new_instance);
     }
+
+    if (!debug_utils_load_status) {
+        log::warning("Loading VK_EXT_debug_utils failue");
+    }
+
+    if (has_debug_utils && debug_utils_load_status) {
+        enabled_extensions.emplace_back("VK_EXT_debug_utils");
+        line_break_if_not_first();
+        log::info("Extension \"VK_EXT_debug_utils\" is loaded");
+    }
+
+    bool primary_debugger_create_status = false;
+
+    if (has_debug_utils && debug_utils_load_status &&
+        impl.debugger != nullptr) {
+        primary_debugger_create_status = impl.debugger->create_messenger(
+            new_instance, impl.m_allocator->get_callbacks()
+        );
+    }
+
+    if (primary_debugger_create_status) {
+        log::debug("Primary debug messenger created");
+    } else {
+        log::warning("Primary debug messenger creation failue");
+    }
+
 #endif
 
     uint32_t cnt_devices = 0;
@@ -314,7 +384,7 @@ std::optional<Context::Impl> Context::Impl::create()
     }
 
     line_break_if_not_first();
-    log::info(std::format("+{:=^50}+", "Devices"));
+    log::info(std::format("+{:=^50}+", " Devices "));
     for (auto device : devices) {
         VkPhysicalDeviceProperties props{};
         vkGetPhysicalDeviceProperties(device, &props);
@@ -322,7 +392,6 @@ std::optional<Context::Impl> Context::Impl::create()
     }
     log::info(std::format("+{:=^50}+", "="));
 
-    Context::Impl impl;
     impl.m_vk_instance = new_instance;
     impl.m_vk_device = devices[0];
     VkPhysicalDeviceProperties dev_props{};
@@ -331,7 +400,6 @@ std::optional<Context::Impl> Context::Impl::create()
     log::info(
         std::format("[INFO]: Selected device \"{}\"", dev_props.deviceName)
     );
-    impl.m_allocator = std::move(new_allocator);
 
     return impl;
 }

@@ -165,37 +165,7 @@ std::vector<VkPhysicalDevice> get_devices(VkInstance instance)
     return devices;
 };
 
-static bool check_phys_device_features(VkPhysicalDevice dev)
-{
-    VkPhysicalDeviceFeatures dev_features;
-    vkGetPhysicalDeviceFeatures(dev, &dev_features);
 
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(dev, &props);
-
-    switch (props.deviceType) {
-    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_OTHER");
-        break;
-    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU");
-        break;
-    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU");
-        break;
-    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU");
-        break;
-    case VK_PHYSICAL_DEVICE_TYPE_CPU:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_CPU");
-        break;
-    case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
-        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM");
-        break;
-    }
-
-    return true;
-};
 
 }; // namespace
 
@@ -399,11 +369,6 @@ std::optional<Context::Impl> Context::Impl::create()
     pvk::info(
         std::format("[INFO]: Selected device \"{}\"", dev_props.deviceName)
     );
-
-    if (!check_phys_device_features(impl.m_vk_device)) {
-        pvk::error("Some required device features are not supported");
-        return std::nullopt;
-    }
 
     return impl;
 }

@@ -30,6 +30,17 @@ struct alignas(Context) Context::Impl
         return Context::impl_size >= sizeof(Context::Impl);
     }
 
+    bool check_phy_device(VkPhysicalDevice dev)
+    {
+        VkPhysicalDeviceFeatures dev_features;
+        vkGetPhysicalDeviceFeatures(dev, &dev_features);
+
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(dev, &props);
+
+        return true;
+    };
+
     ~Impl()
     {
         if (m_allocator == nullptr) {

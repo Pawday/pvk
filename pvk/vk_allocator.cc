@@ -102,7 +102,7 @@ struct Allocator::ImplFriend
         size_t addr_to_free = reinterpret_cast<size_t>(pMemory);
         auto orig_block_it = allocator->m_blocks.find(addr_to_free);
         if (orig_block_it == std::end(allocator->m_blocks)) {
-            log::warning(std::format(
+            pvk::warning(std::format(
                 "VkAllocator: request freeing of nonallocated addres 0x{:x}\n",
                 addr_to_free
             ));
@@ -131,7 +131,7 @@ struct Allocator::ImplFriend
         size_t original_addr = reinterpret_cast<size_t>(original_p);
         auto orig_block_it = allocator->m_blocks.find(original_addr);
         if (orig_block_it == std::end(allocator->m_blocks)) {
-            log::warning(std::format(
+            pvk::warning(std::format(
                 "VkAllocator: reallocating of nonallocated addres 0x{:x}\n",
                 original_addr
             ));

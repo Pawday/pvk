@@ -19,7 +19,7 @@ VkBool32 callback(
     void *pUserData
 )
 {
-    log::debug(std::format("[VkDebugUtils] {}", pCallbackData->pMessage));
+    pvk::debug(std::format("[VkDebugUtils] {}", pCallbackData->pMessage));
     return VK_FALSE;
 }
 
@@ -63,7 +63,7 @@ bool DebugUtilsContext::attach_to(VkInstanceCreateInfo &instance_info) noexcept
     }
 
     if (m_instance_spy) {
-        log::debug("DebugUtilsContext already attached to instance_info");
+        pvk::debug("DebugUtilsContext already attached to instance_info");
         return false;
     }
 
@@ -76,7 +76,7 @@ bool DebugUtilsContext::attach_to(VkInstanceCreateInfo &instance_info) noexcept
 
     while (next != nullptr) {
         if (next == info_addr) {
-            log::warning("DebugUtilsContext already attached"
+            pvk::warning("DebugUtilsContext already attached"
                          "to instance_info somehow");
             m_instance_spy = true;
             return true;
@@ -120,7 +120,7 @@ bool DebugUtilsContext::create_messenger(
         instance, &m_info, m_alloc_callbacks, &new_messenger
     );
     if (create_status != VK_SUCCESS) {
-        log::warning(
+        pvk::warning(
             std::format("Messager create failue - {}", vk_to_str(create_status))
         );
         return false;

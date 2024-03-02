@@ -19,6 +19,10 @@ struct Allocator
     };
 
     Allocator() noexcept;
+
+    // new Allocator passes its addres at creation
+    // it should be alive at that specfic addres until it death
+
     Allocator(const Allocator &) = delete;
     Allocator &operator=(const Allocator &) = delete;
     Allocator(Allocator &&) = delete;

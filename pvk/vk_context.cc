@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include <stack>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -13,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include <cstddef>
 #include <cstdint>
 
 #include "pvk/vk_allocator.hh"
@@ -26,6 +24,7 @@
 
 #include "log.hh"
 #include "string_pack.hh"
+#include "vk_context_impl.hh"
 
 namespace pvk {
 
@@ -46,7 +45,7 @@ std::unordered_set<std::string> get_layer_extensions(const char *layer_name)
             std::string dup_warn = std::format(
                 "Extention \"{}\" mentioned more than once", ext_name
             );
-            log::warning(dup_warn);
+            pvk::warning(dup_warn);
             continue;
         }
         output.emplace(std::move(ext_name));
@@ -70,7 +69,7 @@ static std::unordered_set<std::string> get_layers()
 
         std::string layer_name(layer.layerName);
         if (output.contains(layer_name)) {
-            log::warning(
+            pvk::warning(
                 std::format("Layer {} mentioned more than once", layer_name)
             );
             continue;
@@ -100,7 +99,7 @@ static LayerExtMap
 
             layer_extensions_list = output.find(layer_name);
             if (layer_extensions_list == std::end(output)) {
-                log::error("No memory for layer's extension list");
+                pvk::error("No memory for layer's extension list");
                 continue;
             }
         }
@@ -119,62 +118,84 @@ static void dump_extensions_per_layer(const LayerExtMap &lay_exts)
         if (first) {
             first = false;
         } else {
-            log::info(std::format("| {: <49}|", ""));
+            pvk::info(std::format("| {: <49}|", ""));
         }
 
-        log::info(std::format("| {: <49}|", layer.first));
+        pvk::info(std::format("| {: <49}|", layer.first));
 
         for (auto &extension : layer.second) {
-            log::info(std::format("|   {: <47}|", std::string(extension)));
+            pvk::info(std::format("|   {: <47}|", std::string(extension)));
         }
         if (layer.second.size() == 0) {
-            log::info(std::format("|   {: <47}|", "(No extensions)"));
+            pvk::info(std::format("|   {: <47}|", "(No extensions)"));
         }
     }
 }
-}; // namespace
 
-struct alignas(Context) Context::Impl
+std::vector<VkPhysicalDevice> get_devices(VkInstance instance)
 {
-    static std::optional<Impl> create();
-
-    Impl(Impl &&) = default;
-    Impl &operator=(Impl &&) = default;
-
-    Impl(const Impl &) = delete;
-    Impl &operator=(const Impl &) = delete;
-
-    ~Impl()
-    {
-        {
-            auto primary_debugger = std::move(debugger);
-        }
-        if (m_allocator != nullptr) {
-            vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
-        };
+    uint32_t cnt_devices = 0;
+    VkResult dev_enum_status =
+        vkEnumeratePhysicalDevices(instance, &cnt_devices, nullptr);
+    if (dev_enum_status != VK_SUCCESS) {
+        pvk::warning(std::format(
+            "Counting vulkan physical devices failue: \"{}\"",
+            vk_to_str(dev_enum_status)
+        ));
+        return {};
+    }
+    if (cnt_devices == 0) {
+        return {};
     }
 
-    static Impl &cast_from(std::byte *data)
-    {
-        return *reinterpret_cast<Impl *>(data);
+    std::vector<VkPhysicalDevice> devices;
+    devices.resize(cnt_devices);
+    dev_enum_status =
+        vkEnumeratePhysicalDevices(instance, &cnt_devices, devices.data());
+    if (dev_enum_status != VK_SUCCESS) {
+        pvk::warning(std::format(
+            "Enumerating vulkan physical devices failue: "
+            "\"{}\"",
+            vk_to_str(dev_enum_status)
+        ));
+        return {};
     }
-
-  private:
-    Impl() = default;
-
-    VkInstance m_vk_instance = VK_NULL_HANDLE;
-    VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
-
-    std::unique_ptr<Allocator> m_allocator = nullptr;
-
-#if (PVK_USE_EXT_DEBUG_UTILS)
-    std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
-    std::unique_ptr<DebugUtilsContext> debugger = nullptr;
-
-#endif
-
-    std::stack<VkResult> m_vk_error_stack;
+    return devices;
 };
+
+static bool check_phys_device_features(VkPhysicalDevice dev)
+{
+    VkPhysicalDeviceFeatures dev_features;
+    vkGetPhysicalDeviceFeatures(dev, &dev_features);
+
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(dev, &props);
+
+    switch (props.deviceType) {
+    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_OTHER");
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU");
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU");
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU");
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_CPU");
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
+        pvk::debug("Device type: VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM");
+        break;
+    }
+
+    return true;
+};
+
+}; // namespace
 
 std::optional<Context::Impl> Context::Impl::create()
 {
@@ -203,41 +224,41 @@ std::optional<Context::Impl> Context::Impl::create()
             first = false;
             return;
         }
-        log::info("");
+        pvk::info("");
     };
 
-    auto debug_line_break_if_not_first = [&first]() {
+    [[maybe_unused]] auto debug_line_break_if_not_first = [&first]() {
         if (first) {
             first = false;
             return;
         }
-        log::debug("");
+        pvk::debug("");
     };
 
     if (layer_extensions.size() != 0) {
         line_break_if_not_first();
-        log::info(std::format("+{:=^50}+", " Layers "));
+        pvk::info(std::format("+{:=^50}+", " Layers "));
         dump_extensions_per_layer(layer_extensions);
-        log::info(std::format("+{:=^50}+", ""));
+        pvk::info(std::format("+{:=^50}+", ""));
     }
 
 #if defined(PVK_USE_KHR_VALIDATION_LAYER)
     if (vk_layers.contains("VK_LAYER_KHRONOS_validation")) {
         line_break_if_not_first();
-        log::info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
+        pvk::info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        log::warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+        pvk::warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
     }
 #endif
 
     if (full_extesions_list.size() != 0) {
         line_break_if_not_first();
-        log::info(std::format("+{:=^50}+", " All instance extensions "));
+        pvk::info(std::format("+{:=^50}+", " All instance extensions "));
         for (auto &ext : full_extesions_list) {
-            log::info(std::format("| {: <49}|", ext));
+            pvk::info(std::format("| {: <49}|", ext));
         }
-        log::info(std::format("+{:=^50}+", ""));
+        pvk::info(std::format("+{:=^50}+", ""));
     }
 
     Context::Impl impl;
@@ -249,7 +270,7 @@ std::optional<Context::Impl> Context::Impl::create()
     if (has_debug_utils) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
     } else {
-        log::warning("VK_EXT_debug_utils extension is not supported: Ignore");
+        pvk::warning("VK_EXT_debug_utils extension is not supported: Ignore");
     }
 
     if (has_debug_utils) {
@@ -260,13 +281,12 @@ std::optional<Context::Impl> Context::Impl::create()
     }
 
     if (has_debug_utils && impl.instance_spy == nullptr) {
-        log::warning("Creating early debug messenger failue");
+        pvk::warning("Creating early debug messenger failue");
     }
 
     if (has_debug_utils && impl.debugger == nullptr) {
-        log::warning("Creating primary debug messenger failue");
+        pvk::warning("Creating primary debug messenger failue");
     }
-
 #endif
 
     auto enabled_layer_names =
@@ -301,12 +321,12 @@ std::optional<Context::Impl> Context::Impl::create()
     }
 
     if (has_debug_utils && !instance_debug_attach_status) {
-        log::warning("Attaching early messenger failue");
+        pvk::warning("Attaching early messenger failue");
     }
 
     if (has_debug_utils && instance_debug_attach_status) {
         debug_line_break_if_not_first();
-        log::debug("Early messenger attached to instance");
+        pvk::debug("Early messenger attached to instance");
     }
 #endif
 
@@ -316,12 +336,13 @@ std::optional<Context::Impl> Context::Impl::create()
     );
 
     if (instance_create_status != VK_SUCCESS) {
-        log::error(std::format(
+        pvk::error(std::format(
             "Creating vulkan context failue: \"{}\"",
             vk_to_str(instance_create_status)
         ));
         return std::nullopt;
     }
+    impl.m_vk_instance = new_instance;
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     if (has_debug_utils) {
@@ -329,13 +350,13 @@ std::optional<Context::Impl> Context::Impl::create()
     }
 
     if (!debug_utils_load_status) {
-        log::warning("Loading VK_EXT_debug_utils failue");
+        pvk::warning("Loading VK_EXT_debug_utils failue");
     }
 
     if (has_debug_utils && debug_utils_load_status) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
         line_break_if_not_first();
-        log::info("Extension \"VK_EXT_debug_utils\" is loaded");
+        pvk::info("Extension \"VK_EXT_debug_utils\" is loaded");
     }
 
     bool primary_debugger_create_status = false;
@@ -348,90 +369,70 @@ std::optional<Context::Impl> Context::Impl::create()
     }
 
     if (primary_debugger_create_status) {
-        log::debug("Primary debug messenger created");
+        pvk::debug("Primary debug messenger created");
     } else {
-        log::warning("Primary debug messenger creation failue");
+        pvk::warning("Primary debug messenger creation failue");
     }
-
 #endif
 
-    uint32_t cnt_devices = 0;
-    VkResult dev_enum_status =
-        vkEnumeratePhysicalDevices(new_instance, &cnt_devices, nullptr);
-    if (dev_enum_status != VK_SUCCESS) {
-        log::error(std::format(
-            "[ERROR]: Counting vulkan physical devices failue: \"{}\"",
-            vk_to_str(dev_enum_status)
-        ));
-        return std::nullopt;
-    }
-    if (cnt_devices == 0) {
-        log::error("[ERROR]: No single vulkan physical device found");
-        return std::nullopt;
-    }
-
-    std::vector<VkPhysicalDevice> devices;
-    devices.resize(cnt_devices);
-    dev_enum_status =
-        vkEnumeratePhysicalDevices(new_instance, &cnt_devices, devices.data());
-    if (dev_enum_status != VK_SUCCESS) {
-        log::error(std::format(
-            "[ERROR]: Enumerating vulkan physical devices failue: "
-            "\"{}\"",
-            vk_to_str(dev_enum_status)
-        ));
+    std::vector<VkPhysicalDevice> devices = get_devices(new_instance);
+    if (devices.size() == 0) {
+        pvk::error("No single device");
         return std::nullopt;
     }
 
     line_break_if_not_first();
-    log::info(std::format("+{:=^50}+", " Devices "));
+    pvk::info(std::format("+{:=^50}+", " Devices "));
     for (auto device : devices) {
         VkPhysicalDeviceProperties props{};
         vkGetPhysicalDeviceProperties(device, &props);
-        log::info(std::format("|{: ^50}|", std::string(props.deviceName)));
+        pvk::info(std::format("|{: ^50}|", std::string(props.deviceName)));
     }
-    log::info(std::format("+{:=^50}+", "="));
+    pvk::info(std::format("+{:=^50}+", "="));
 
-    impl.m_vk_instance = new_instance;
     impl.m_vk_device = devices[0];
     VkPhysicalDeviceProperties dev_props{};
     vkGetPhysicalDeviceProperties(impl.m_vk_device, &dev_props);
     line_break_if_not_first();
-    log::info(
+    pvk::info(
         std::format("[INFO]: Selected device \"{}\"", dev_props.deviceName)
     );
+
+    if (!check_phys_device_features(impl.m_vk_device)) {
+        pvk::error("Some required device features are not supported");
+        return std::nullopt;
+    }
 
     return impl;
 }
 
 std::optional<Context> Context::create() noexcept
 {
-    Context output;
-    auto impl = Context::Impl::create();
+    std::optional<Context::Impl> impl = Context::Impl::create();
     if (!impl) {
         return std::nullopt;
     }
 
+    Context output;
     new (output.impl) Context::Impl(std::move(*impl));
     return output;
 }
 
-Context::Context() = default;
-
 Context::Context(Context &&other) noexcept
 {
-    new (impl) Context::Impl(std::move(Context::Impl::cast_from(other.impl)));
-    std::ranges::fill(other.impl, std::byte(0));
+    auto &other_impl = Context::Impl::cast_from(other.impl);
+    new (impl) Context::Impl(std::move(other_impl));
 }
 
 Context &Context::operator=(Context &&other) noexcept
 {
-    std::swap(impl, other.impl);
+    std::swap(this->impl, other.impl);
     return *this;
 }
 
 Context::~Context()
 {
-    Context::Impl context(std::move(Impl::cast_from(impl)));
+    Impl::cast_from(impl).~Impl();
 }
+
 } // namespace pvk

@@ -24,7 +24,7 @@ bool glad_version_is_not_sane(int ver_maj, int ver_min)
         char8_t fuck_msg_u8[] = u8"Ебаный GLAD, какого хуя блять?\n";
         std::string fuck_message;
         std::ranges::copy(fuck_msg_u8, std::back_inserter(fuck_message));
-        log::error(fuck_message);
+        pvk::error(fuck_message);
         return true;
     }
     return false;
@@ -36,14 +36,14 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
 
     auto proc_addres = vk_library->load_sym(vk_proc_name);
     if (!proc_addres) {
-        log::error(
+        pvk::error(
             std::format("Fail to load Vulkan function {}\n", vk_proc_name)
         );
         return NULL;
     }
 
     if (*proc_addres == NULL) {
-        log::error(std::format(
+        pvk::error(std::format(
             "Well, Vulkan vendor by whatever fucking reason desided "
             "to put !!valid!! Vulkan function \"{0}\" at addres 0 "
             "(!!ZERO!!) "
@@ -66,7 +66,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     std::optional<SymLoader> vk_library = SymLoader::load(library);
     if (!vk_library) {
-        log::warning(
+        pvk::warning(
             std::format("Load shared Vulkan library \"{}\" failed\n", library)
         );
         return std::nullopt;
@@ -74,7 +74,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     int vulkan_version = gladLoadVulkanUserPtr(NULL, load_vk_proc, &vk_library);
     if (vulkan_version == 0) {
-        log::error(std::format("Loading Vulkan from {} failed\n", library));
+        pvk::error(std::format("Loading Vulkan from {} failed\n", library));
         return std::nullopt;
     }
 
@@ -87,7 +87,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
     VKVersion version;
 
     if (std::numeric_limits<VKVersion::Major_t>::max() < vulkan_version_maj) {
-        log::warning(std::format(
+        pvk::warning(std::format(
             "Actual major version of vulkan is {}\n", vulkan_version_maj
         ));
         version.major = std::numeric_limits<VKVersion::Major_t>::max();
@@ -96,7 +96,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
     }
 
     if (std::numeric_limits<VKVersion::Minor_t>::max() < vulkan_version_min) {
-        log::warning(std::format(
+        pvk::warning(std::format(
             "Actual minor version of vulkan is {}\n", vulkan_version_min
         ));
         version.minor = std::numeric_limits<VKVersion::Minor_t>::max();

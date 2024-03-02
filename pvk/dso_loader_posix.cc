@@ -14,13 +14,13 @@
 namespace {
 static void log_preload_error(const std::string &msg)
 try {
-    log::warning(std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg));
+    pvk::warning(std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg));
 } catch (...) {
 }
 
 static void log_unload_failue(const std::string &lib_name)
 try {
-    log::warning(std::format("Unload library {} failue", lib_name));
+    pvk::warning(std::format("Unload library {} failue", lib_name));
 } catch (...) {
 }
 
@@ -37,7 +37,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = dlopen(library_file.c_str(), RTLD_NOW);
     char *load_status = dlerror();
     if (load_status != NULL) {
-        log::warning(std::format(
+        pvk::warning(std::format(
             "Failue loading library from: \"{}\" reason \"{}\"\n",
             library_file,
             load_status
@@ -56,10 +56,7 @@ SymLoader::SymLoader() = default;
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {
     m_library_path = std::move(other.m_library_path);
-    m_handle = other.m_handle;
-
-    other.m_handle = NULL;
-    other.m_moved = true;
+    std::swap(m_handle, other.m_handle);
 }
 
 std::optional<void *> SymLoader::load_sym(const std::string &symname)
@@ -80,7 +77,7 @@ std::optional<void *> SymLoader::load_sym(const std::string &symname)
 
 SymLoader::~SymLoader() noexcept
 {
-    if (m_moved) {
+    if (m_handle == NULL) {
         return;
     }
 

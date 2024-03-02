@@ -14,13 +14,6 @@ struct SymLoader
     SymLoader(const SymLoader &) = delete;
     SymLoader &operator=(const SymLoader &) = delete;
 
-    friend void swap(SymLoader &lhs, SymLoader rhs) noexcept
-    {
-        std::swap(lhs.m_moved, rhs.m_moved);
-        std::swap(lhs.m_library_path, rhs.m_library_path);
-        std::swap(lhs.m_handle, rhs.m_handle);
-    }
-
     SymLoader(SymLoader &&other) noexcept;
     SymLoader &operator=(SymLoader &&other) noexcept
     {
@@ -32,7 +25,6 @@ struct SymLoader
 
   private:
     SymLoader();
-    bool m_moved = false;
     std::string m_library_path;
     void *m_handle = NULL;
 };

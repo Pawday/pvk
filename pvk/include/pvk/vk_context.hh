@@ -24,8 +24,8 @@ struct PVK_API alignas(std::max_align_t) Context
     std::stack<VkResult> get_error_stack() const;
 
   private:
-    Context();
-    static constexpr size_t impl_size = 1024;
+    Context() = default;
+    static constexpr size_t impl_size = 128;
     std::byte impl[impl_size];
 
     struct Impl;

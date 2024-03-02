@@ -20,7 +20,7 @@ namespace {
 
 static void log_unload_failue(const std::string &lib_name)
 try {
-    log::warning(std::format("Unload library {} failue", lib_name));
+    pvk::warning(std::format("Unload library {} failue", lib_name));
 } catch (...) {
 }
 
@@ -33,7 +33,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = LoadLibraryA(library_file.c_str());
     DWORD last_error_code = GetLastError();
     if (new_handle == NULL) {
-        log::warning(std::format(
+        pvk::warning(std::format(
             "Failue loading library from: \"{}\" error code 0x{:X}",
             library_file,
             last_error_code
@@ -56,10 +56,7 @@ SymLoader::SymLoader() = default;
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {
     m_library_path = std::move(other.m_library_path);
-    m_handle = other.m_handle;
-
-    other.m_handle = NULL;
-    other.m_moved = true;
+    std::swap(m_handle, other.m_handle);
 }
 
 std::optional<void *> SymLoader::load_sym(const std::string &symname)
@@ -80,7 +77,7 @@ std::optional<void *> SymLoader::load_sym(const std::string &symname)
 
 SymLoader::~SymLoader() noexcept
 {
-    if (m_moved) {
+    if (m_handle == NULL) {
         return;
     }
 

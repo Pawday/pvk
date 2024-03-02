@@ -1,3 +1,4 @@
+#include "pvk/logger.hh"
 #include <optional>
 #include <utility>
 #if !defined(PVK_USE_EXT_DEBUG_UTILS)
@@ -244,7 +245,13 @@ struct DebugUtilsContext
     DebugUtilsContext(DebugUtilsContext &&) = delete;
     DebugUtilsContext &operator=(DebugUtilsContext &&) = delete;
 
+    Logger &get_logger() noexcept
+    {
+        return l;
+    }
+
   private:
+    Logger l;
     bool m_instance_spy = false;
     DebugUtilsEXT::MessengerCreateInfo m_info{};
     DebugUtilsContext() noexcept;

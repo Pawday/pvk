@@ -11,14 +11,30 @@ namespace pvk {
 
 DebugUtilsContext::DebugUtilsContext() noexcept = default;
 
-VkBool32 callback(
+static VkBool32 callback(
     DebugUtilsEXT::MessageSeverityFlagBits messageSeverity,
     DebugUtilsEXT::MessageTypeFlags messageTypes,
     const DebugUtilsEXT::MessengerCallbackData *pCallbackData,
     void *pUserData
 )
 {
-    pvk::debug(std::format("[VkDebugUtils] {}", pCallbackData->pMessage));
+    DebugUtilsContext *ctx = reinterpret_cast<DebugUtilsContext *>(pUserData);
+
+    switch (messageSeverity) {
+    case DebugUtilsEXT::MessageSeverityFlagBits::VERBOSE_BIT:
+        ctx->get_logger().debug(pCallbackData->pMessage);
+        break;
+    case DebugUtilsEXT::MessageSeverityFlagBits::INFO_BIT:
+        ctx->get_logger().info(pCallbackData->pMessage);
+        break;
+    case DebugUtilsEXT::MessageSeverityFlagBits::WARNING_BIT:
+        ctx->get_logger().warning(pCallbackData->pMessage);
+        break;
+    case DebugUtilsEXT::MessageSeverityFlagBits::ERROR_BIT:
+        ctx->get_logger().error(pCallbackData->pMessage);
+        break;
+    }
+
     return VK_FALSE;
 }
 

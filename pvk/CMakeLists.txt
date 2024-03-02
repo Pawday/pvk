@@ -58,8 +58,10 @@ target_pvk_options(pvk_objects)
 pvk_link_export(pvk_objects)
 target_sources(pvk_objects PRIVATE
     vk_loader.cc
-    vk_context_impl.cc
+    vk_instance_ctx.cc
+    vk_instance_ctx_impl.cc
     log_global.cc
+    logger.cc
 )
 if(WIN32)
     target_sources(pvk_objects PRIVATE dso_loader_win32.cc)

@@ -4,42 +4,32 @@
 #include <memory>
 #include <optional>
 #include <stack>
+#include <vector>
 
 #include <pvk/vk_allocator.hh>
-#include <pvk/vk_context.hh>
+#include <pvk/vk_instance_ctx.hh>
+#include <pvk/logger.hh>
 
 #if PVK_USE_EXT_DEBUG_UTILS
 #include <pvk/extensions/debug_utils.hh>
 #endif
 
 namespace pvk {
-struct alignas(Context) Context::Impl
+struct alignas(InstanceContext) InstanceContext::Impl
 {
     static std::optional<Impl> create();
 
-    Impl(Impl &&other) = default;
-
-    Impl &operator=(Impl &&other) = default;
-
-    Impl(const Impl &) = delete;
-    Impl &operator=(const Impl &) = delete;
-
-    static bool chech_size()
+    static Impl &cast_from(std::byte *data)
     {
-        static_assert(Context::impl_size >= sizeof(Context::Impl));
-        return Context::impl_size >= sizeof(Context::Impl);
+        return *reinterpret_cast<Impl *>(data);
     }
 
-    bool check_phy_device(VkPhysicalDevice dev)
-    {
-        VkPhysicalDeviceFeatures dev_features;
-        vkGetPhysicalDeviceFeatures(dev, &dev_features);
+    std::vector<VkPhysicalDevice> get_devices() const;
 
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(dev, &props);
-
-        return true;
-    };
+    Impl(Impl &&other) = default;
+    Impl &operator=(Impl &&other) = delete;
+    Impl(const Impl &) = delete;
+    Impl &operator=(const Impl &) = delete;
 
     ~Impl()
     {
@@ -50,26 +40,30 @@ struct alignas(Context) Context::Impl
 #if (PVK_USE_EXT_DEBUG_UTILS)
         debugger.reset();
 #endif
-
         vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
         m_vk_instance = VK_NULL_HANDLE;
 
 #if (PVK_USE_EXT_DEBUG_UTILS)
         instance_spy.reset();
 #endif
-    }
 
-    static Impl &cast_from(std::byte *data)
-    {
-        return *reinterpret_cast<Impl *>(data);
     }
 
   private:
+
+    Logger l;
+
+    static bool check_size()
+    {
+        static_assert(
+            InstanceContext::impl_size >= sizeof(InstanceContext::Impl)
+        );
+        return InstanceContext::impl_size >= sizeof(InstanceContext::Impl);
+    }
+
     Impl() = default;
 
     VkInstance m_vk_instance = VK_NULL_HANDLE;
-    VkPhysicalDevice m_vk_device = VK_NULL_HANDLE;
-
     std::unique_ptr<Allocator> m_allocator = nullptr;
 
 #if (PVK_USE_EXT_DEBUG_UTILS)

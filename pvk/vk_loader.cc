@@ -15,7 +15,7 @@
 #include "pvk/vk_api.hh"
 #include "pvk/vk_loader.hh"
 
-#include "log.hh"
+#include "pvk/log.hh"
 
 namespace {
 bool glad_version_is_not_sane(int ver_maj, int ver_min)

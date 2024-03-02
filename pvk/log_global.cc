@@ -48,7 +48,7 @@ std::vector<Segment> split_ln(const std::string &data)
     return output;
 }
 
-namespace log {
+namespace pvk {
 
 constexpr std::string ansi_color(uint8_t r, uint8_t g, uint8_t b)
 {

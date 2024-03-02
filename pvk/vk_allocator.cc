@@ -10,7 +10,7 @@
 
 #include "pvk/vk_allocator.hh"
 
-#include "log.hh"
+#include "pvk/log.hh"
 
 namespace {
 static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)

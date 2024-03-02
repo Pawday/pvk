@@ -5,8 +5,7 @@
 
 #include <pvk/extensions/debug_utils.hh>
 
-#pragma message "TODO: make proper include path for log.hh"
-#include "log.hh"
+#include "pvk/log.hh"
 
 namespace pvk {
 

@@ -18,11 +18,13 @@
 #include "pvk/vk_context.hh"
 #include "pvk/vk_result.hh"
 
+#include "pvk/log.hh"
+
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 #include "pvk/extensions/debug_utils.hh"
 #endif
 
-#include "log.hh"
+
 #include "string_pack.hh"
 #include "vk_context_impl.hh"
 

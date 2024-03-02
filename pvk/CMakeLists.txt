@@ -72,6 +72,7 @@ if (PVK_ANY_OF_EXTENSIONS_IN_USE)
     add_library(pvk_extensions_objects OBJECT)
     target_pvk_options(pvk_extensions_objects)
     target_link_libraries(pvk_extensions_objects PRIVATE pvk_headers)
+    target_include_directories(pvk_extensions_objects PRIVATE include/pvk)
 endif()
 
 if (PVK_USE_EXT_DEBUG_UTILS)

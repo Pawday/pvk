@@ -9,7 +9,7 @@
 
 #include "pvk/dso_loader.hh"
 
-#include "log.hh"
+#include "pvk/log.hh"
 
 namespace {
 static void log_preload_error(const std::string &msg)

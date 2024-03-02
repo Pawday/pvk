@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-#include "pvk/vk_context.hh"
+#include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_loader.hh"
 
 using namespace pvk;
@@ -57,12 +57,12 @@ struct Application
     }
 
   private:
-    std::optional<Context> m_vk_context;
+    std::optional<InstanceContext> m_vk_context;
 };
 
 Application::Application()
 {
-    m_vk_context = Context::create();
+    m_vk_context = InstanceContext::create();
     if (!m_vk_context) {
         return;
     }

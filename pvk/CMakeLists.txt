@@ -5,6 +5,7 @@ project(pvk VERSION 0.0.1)
 option(PVK_USE_EXT_DEBUG_UTILS "Try load and use VK_EXT_debug_utils" OFF)
 option(PVK_USE_KHR_VALIDATION_LAYER "Try load and use VK_LAYER_KHRONOS_validation" OFF)
 
+option(PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG "Enable align mismatch log (some drivers do )" OFF)
 
 set(PVK_BUILD_SHARED_DEFAULT OFF)
 set(PVK_BUILD_STATIC_DEFAULT ON)
@@ -41,10 +42,17 @@ add_library(pvk_headers INTERFACE)
 target_include_directories(pvk_headers INTERFACE include)
 target_link_libraries(pvk_headers INTERFACE glad_headers)
 
+
+
 add_library(pvk_allocator OBJECT vk_allocator.cc)
 set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_pvk_options(pvk_allocator)
 target_link_libraries(pvk_allocator PRIVATE pvk_headers)
+target_pvk_options(pvk_allocator)
+
+if (PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
+    target_compile_definitions(pvk_allocator PRIVATE PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
+endif()
+
 if(WIN32)
     target_compile_definitions(pvk_allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
 else()
@@ -52,17 +60,20 @@ else()
 endif()
 
 add_library(pvk_objects OBJECT)
+pvk_link_export(pvk_objects)
 set_property(TARGET pvk_objects PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk_objects PRIVATE pvk_headers)
 target_pvk_options(pvk_objects)
-pvk_link_export(pvk_objects)
 target_sources(pvk_objects PRIVATE
-    vk_loader.cc
-    vk_instance_ctx.cc
-    vk_instance_ctx_impl.cc
     log_global.cc
     logger.cc
+    vk_device_ctx.cc
+    vk_device_ctx_impl.cc
+    vk_instance_ctx.cc
+    vk_instance_ctx_impl.cc
+    vk_loader.cc
 )
+
 if(WIN32)
     target_sources(pvk_objects PRIVATE dso_loader_win32.cc)
 else()

@@ -31,12 +31,10 @@ static void aligned_free_wrap(void *p)
 #endif
 }
 
+#if defined(PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
 static void
     warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 {
-
-#pragma message "TODO: Deal with allocator align mismatch trace"
-    return;
 
     PVK_TRACE(std::format(
         "Driver requested undivisibly {} "
@@ -46,6 +44,8 @@ static void
         aligned_size
     ));
 }
+#endif
+
 } // namespace
 
 namespace pvk {
@@ -63,10 +63,12 @@ struct Allocator::ImplFriend
 
         size_t aligned_size = size;
 
+#if defined(PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
         if (size % alignment != 0) {
             aligned_size = ((size / alignment) + 1) * alignment;
             warn_memsize_align(size, alignment, aligned_size);
         }
+#endif
 
         /*
          * VK_LAYER_NV_optimus produce heap buffer overflow

@@ -4,8 +4,10 @@
 #include <pvk/vk_result.hh>
 
 #include <pvk/extensions/debug_utils.hh>
+#include <pvk/extensions/debug_utils_context.hh>
 
-#include "pvk/log.hh"
+#include <pvk/log.hh>
+#include <pvk/vk_allocator.hh>
 
 namespace pvk {
 
@@ -18,6 +20,7 @@ static VkBool32 callback(
     void *pUserData
 )
 {
+    (void)messageTypes;
     DebugUtilsContext *ctx = reinterpret_cast<DebugUtilsContext *>(pUserData);
 
     switch (messageSeverity) {
@@ -39,7 +42,8 @@ static VkBool32 callback(
 }
 
 std::unique_ptr<DebugUtilsContext>
-    DebugUtilsContext::create(const VkAllocationCallbacks *allocator) noexcept
+    DebugUtilsContext::create(std::shared_ptr<pvk::Allocator> allocator
+    ) noexcept
 {
     std::unique_ptr<DebugUtilsContext> output =
         std::unique_ptr<DebugUtilsContext>(new DebugUtilsContext());
@@ -47,7 +51,7 @@ std::unique_ptr<DebugUtilsContext>
         return nullptr;
     }
 
-    output->m_alloc_callbacks = allocator;
+    output->m_allocator = allocator;
 
     using MsgTFlag = DebugUtilsEXT::MessageTypeFlagBits;
     DebugUtilsEXT::MessageTypeFlags msgs = 0;
@@ -132,7 +136,7 @@ bool DebugUtilsContext::create_messenger(
 
     DebugUtilsEXT::Messenger new_messenger = VK_NULL_HANDLE;
     auto create_status = DebugUtilsEXT::CreateMessenger(
-        instance, &m_info, m_alloc_callbacks, &new_messenger
+        instance, &m_info, m_allocator->get_callbacks(), &new_messenger
     );
     if (create_status != VK_SUCCESS) {
         pvk::warning(

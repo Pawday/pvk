@@ -18,10 +18,9 @@
 #include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_result.hh"
 
-#include "pvk/log.hh"
-
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
-#include "pvk/extensions/debug_utils.hh"
+#include <pvk/extensions/debug_utils.hh>
+#include <pvk/extensions/debug_utils_context.hh>
 #endif
 
 #include "string_pack.hh"
@@ -141,18 +140,20 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     InstanceContext::Impl impl;
     impl.l.set_name("InstanceContext");
 
+    Logger &l = impl.l;
+
     std::unordered_set<std::string> full_extesions_list;
     static std::vector<std::string_view> enabled_layers;
     static std::vector<std::string_view> enabled_extensions;
 
-    std::unordered_set<std::string> vk_layers = get_layers(impl.l);
+    std::unordered_set<std::string> vk_layers = get_layers(l);
 
-    auto implicit_extensions = get_layer_extensions(impl.l, nullptr);
+    auto implicit_extensions = get_layer_extensions(l, nullptr);
     for (auto &implicit_extension : implicit_extensions) {
         full_extesions_list.emplace(std::move(implicit_extension));
     }
 
-    LayerExtMap layer_extensions = get_layers_extensions(impl.l, vk_layers);
+    LayerExtMap layer_extensions = get_layers_extensions(l, vk_layers);
 
     for (auto &layer : layer_extensions) {
         for (auto &layer_ext_name : layer.second) {
@@ -161,47 +162,47 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 
     bool first = true;
-    auto line_break_if_not_first = [&first, &impl]() {
+    auto line_break_if_not_first = [&first, &l]() {
         if (first) {
             first = false;
             return;
         }
-        impl.l.info("");
+        l.info("");
     };
 
-    [[maybe_unused]] auto debug_line_break_if_not_first = [&first, &impl]() {
+    [[maybe_unused]] auto debug_line_break_if_not_first = [&first, &l]() {
         if (first) {
             first = false;
             return;
         }
-        impl.l.debug("");
+        l.debug("");
     };
 
     if (layer_extensions.size() != 0) {
         line_break_if_not_first();
-        impl.l.info(std::format("+{:=^50}+", " Layers "));
-        dump_extensions_per_layer(impl.l, layer_extensions);
-        impl.l.info(std::format("+{:=^50}+", ""));
+        l.info(std::format("+{:=^50}+", " Layers "));
+        dump_extensions_per_layer(l, layer_extensions);
+        l.info(std::format("+{:=^50}+", ""));
     }
 
 #if defined(PVK_USE_KHR_VALIDATION_LAYER)
     if (vk_layers.contains("VK_LAYER_KHRONOS_validation")) {
         line_break_if_not_first();
-        impl.l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
+        l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        impl.l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported"
+        l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported"
         );
     }
 #endif
 
     if (full_extesions_list.size() != 0) {
         line_break_if_not_first();
-        impl.l.info(std::format("+{:=^50}+", " All instance extensions "));
+        l.info(std::format("+{:=^50}+", " All instance extensions "));
         for (auto &ext : full_extesions_list) {
-            impl.l.info(std::format("| {: <49}|", ext));
+            l.info(std::format("| {: <49}|", ext));
         }
-        impl.l.info(std::format("+{:=^50}+", ""));
+        l.info(std::format("+{:=^50}+", ""));
     }
 
     impl.m_allocator = std::make_unique<Allocator>();
@@ -212,24 +213,24 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     if (has_debug_utils) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
     } else {
-        impl.l.warning("VK_EXT_debug_utils extension is not supported: Ignore");
+        l.warning("VK_EXT_debug_utils extension is not supported: Ignore");
     }
 
     if (has_debug_utils) {
         impl.instance_spy =
-            DebugUtilsContext::create(impl.m_allocator->get_callbacks());
+            DebugUtilsContext::create(impl.m_allocator);
         impl.instance_spy->get_logger().set_name("VkInstance Spy");
         impl.debugger =
-            DebugUtilsContext::create(impl.m_allocator->get_callbacks());
+            DebugUtilsContext::create(impl.m_allocator);
         impl.debugger->get_logger().set_name("Debug Utils");
     }
 
     if (has_debug_utils && impl.instance_spy == nullptr) {
-        impl.l.warning("Creating early debug messenger failue");
+        l.warning("Creating early debug messenger failue");
     }
 
     if (has_debug_utils && impl.debugger == nullptr) {
-        impl.l.warning("Creating primary debug messenger failue");
+        l.warning("Creating primary debug messenger failue");
     }
 #endif
 
@@ -265,12 +266,12 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 
     if (has_debug_utils && !instance_debug_attach_status) {
-        impl.l.warning("Attaching early messenger failue");
+        l.warning("Attaching early messenger failue");
     }
 
     if (has_debug_utils && instance_debug_attach_status) {
         debug_line_break_if_not_first();
-        impl.l.debug("Early messenger attached to instance");
+        l.debug("Early messenger attached to instance");
     }
 #endif
 
@@ -280,7 +281,7 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     );
 
     if (instance_create_status != VK_SUCCESS) {
-        impl.l.error(std::format(
+        l.error(std::format(
             "Creating vulkan context failue: \"{}\"",
             vk_to_str(instance_create_status)
         ));
@@ -294,13 +295,13 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 
     if (!debug_utils_load_status) {
-        impl.l.warning("Loading VK_EXT_debug_utils failue");
+        l.warning("Loading VK_EXT_debug_utils failue");
     }
 
     if (has_debug_utils && debug_utils_load_status) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
         line_break_if_not_first();
-        impl.l.info("Extension \"VK_EXT_debug_utils\" is loaded");
+        l.info("Extension \"VK_EXT_debug_utils\" is loaded");
     }
 
     bool primary_debugger_create_status = false;
@@ -313,9 +314,9 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 
     if (primary_debugger_create_status) {
-        impl.l.debug("Primary debug messenger created");
+        l.debug("Primary debug messenger created");
     } else {
-        impl.l.warning("Primary debug messenger creation failue");
+        l.warning("Primary debug messenger creation failue");
     }
 #endif
 

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <format>
 #include <iterator>
@@ -11,24 +12,117 @@
 #include <utility>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
-#include "pvk/logger.hh"
-#include "pvk/vk_allocator.hh"
-#include "pvk/vk_instance_ctx.hh"
-#include "pvk/vk_result.hh"
+#include <pvk/logger.hh>
+#include <pvk/physical_device.hh>
+#include <pvk/vk_allocator.hh>
+#include <pvk/vk_api.hh>
+#include <pvk/vk_instance_ctx.hh>
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 #include <pvk/extensions/debug_utils.hh>
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
-#include "string_pack.hh"
-#include "vk_instance_ctx_impl.hh"
+#include "pvk/phy_device_conv.hh"
+#include "pvk/result.hh"
+#include "pvk/string_pack.hh"
 
 namespace pvk {
+struct alignas(InstanceContext) InstanceContext::Impl
+{
+    static std::optional<InstanceContext> create();
+    std::vector<VkPhysicalDevice> get_devices() const;
 
-std::unordered_set<std::string>
+    Impl(Impl &&other) noexcept;
+    Impl &operator=(Impl &&other) = delete;
+    Impl(const Impl &) = delete;
+    Impl &operator=(const Impl &) = delete;
+
+    ~Impl() noexcept;
+
+    static Impl &cast_from(std::byte *data)
+    {
+        return *reinterpret_cast<Impl *>(data);
+    }
+
+    static Impl const &cast_from(std::byte const *data)
+    {
+        return *reinterpret_cast<Impl const *>(data);
+    }
+
+  private:
+    std::shared_ptr<Allocator> m_allocator = nullptr;
+    VkInstance m_vk_instance = VK_NULL_HANDLE;
+    Logger l;
+
+#if (PVK_USE_EXT_DEBUG_UTILS)
+    static void debug_utils_log_cb(
+        void *user_data, Logger::Level level, const std::string &message
+    ) noexcept;
+    std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
+    std::unique_ptr<DebugUtilsContext> debugger = nullptr;
+#endif
+
+    static bool check_impl_sizes()
+    {
+        static_assert(sizeof(PhysicalDevice) >= sizeof(VkPhysicalDevice));
+
+        if (sizeof(VkPhysicalDevice) > sizeof(PhysicalDevice)) {
+            return false;
+        }
+
+        static_assert(
+            InstanceContext::impl_size >= sizeof(InstanceContext::Impl)
+        );
+        if (InstanceContext::impl_size < sizeof(InstanceContext::Impl)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    Impl() = default;
+};
+
+InstanceContext::InstanceContext(InstanceContext::Impl &&impl) noexcept
+{
+    new (this->impl) InstanceContext::Impl(std::move(impl));
+}
+
+InstanceContext &InstanceContext::operator=(InstanceContext &&other) noexcept
+{
+    std::swap(this->impl, other.impl);
+    return *this;
+}
+
+InstanceContext::~InstanceContext() noexcept
+{
+    Impl::cast_from(impl).~Impl();
+}
+
+InstanceContext::Impl::~Impl() noexcept
+{
+    if (m_vk_instance == NULL) {
+        return;
+    }
+
+#if (PVK_USE_EXT_DEBUG_UTILS)
+    debugger.reset();
+#endif
+    vkDestroyInstance(m_vk_instance, m_allocator->get_callbacks());
+    m_vk_instance = VK_NULL_HANDLE;
+
+#if (PVK_USE_EXT_DEBUG_UTILS)
+    instance_spy.reset();
+#endif
+}
+
+namespace {
+
+static std::unordered_set<std::string>
     get_layer_extensions(Logger &l, const char *layer_name)
 {
     uint32_t nb_extensions = 0;
@@ -55,7 +149,6 @@ std::unordered_set<std::string>
     return output;
 }
 
-namespace {
 static std::unordered_set<std::string> get_layers(Logger &l)
 {
     uint32_t nb_layers = 0;
@@ -135,7 +228,12 @@ static void dump_extensions_per_layer(Logger &l, const LayerExtMap &lay_exts)
 
 }; // namespace
 
-std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
+std::optional<InstanceContext> InstanceContext::create() noexcept
+{
+    return InstanceContext::Impl::create();
+}
+
+std::optional<InstanceContext> InstanceContext::Impl::create()
 {
     InstanceContext::Impl impl;
     impl.l.set_name("InstanceContext");
@@ -191,8 +289,7 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported"
-        );
+        l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
     }
 #endif
 
@@ -217,12 +314,14 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 
     if (has_debug_utils) {
-        impl.instance_spy =
-            DebugUtilsContext::create(impl.m_allocator);
-        impl.instance_spy->get_logger().set_name("VkInstance Spy");
-        impl.debugger =
-            DebugUtilsContext::create(impl.m_allocator);
+        impl.instance_spy = DebugUtilsContext::create(impl.m_allocator);
+        impl.instance_spy->get_logger().set_name("SpyLog");
+        impl.instance_spy->get_logger().set_userdata(&impl);
+        impl.instance_spy->get_logger().set_callback(debug_utils_log_cb);
+        impl.debugger = DebugUtilsContext::create(impl.m_allocator);
         impl.debugger->get_logger().set_name("Debug Utils");
+        impl.debugger->get_logger().set_userdata(&impl);
+        impl.debugger->get_logger().set_callback(debug_utils_log_cb);
     }
 
     if (has_debug_utils && impl.instance_spy == nullptr) {
@@ -320,7 +419,22 @@ std::optional<InstanceContext::Impl> InstanceContext::Impl::create()
     }
 #endif
 
-    return impl;
+    return InstanceContext(std::move(impl));
+}
+
+std::vector<PhysicalDevice>
+    InstanceContext::get_devices() const
+{
+    std::vector<PhysicalDevice> output;
+
+    auto devices = Impl::cast_from(this->impl).get_devices();
+    output.reserve(devices.size());
+
+    for (auto &device : devices) {
+        output.emplace_back(from_native(device));
+    }
+
+    return output;
 }
 
 std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
@@ -352,6 +466,55 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
         return {};
     }
     return devices;
+}
+
+#if defined(PVK_USE_EXT_DEBUG_UTILS)
+void InstanceContext::Impl::debug_utils_log_cb(
+    void *user_data, Logger::Level level, const std::string &message
+) noexcept
+{
+    InstanceContext::Impl &impl =
+        *reinterpret_cast<InstanceContext::Impl *>(user_data);
+    switch (level) {
+    case Logger::Level::ERROR:
+        impl.l.error(message);
+        break;
+    case Logger::Level::WARNING:
+        impl.l.warning(message);
+        break;
+    case Logger::Level::INFO:
+        [[fallthrough]];
+    case Logger::Level::DEBUG:
+        impl.l.debug(message);
+        break;
+    case Logger::Level::TRACE:
+        impl.l.trace(message);
+        break;
+    }
+    return;
+}
+#endif
+
+InstanceContext::InstanceContext(InstanceContext &&other) noexcept
+{
+    auto &other_impl = InstanceContext::Impl::cast_from(other.impl);
+    new (impl) InstanceContext::Impl(std::move(other_impl));
+}
+
+InstanceContext::Impl::Impl(InstanceContext::Impl &&other) noexcept
+    : m_allocator(std::move(other.m_allocator)),
+      m_vk_instance(std::move(other.m_vk_instance)), l(std::move(other.l))
+#if (PVK_USE_EXT_DEBUG_UTILS)
+      ,
+      instance_spy(std::move(other.instance_spy)),
+      debugger(std::move(other.debugger))
+#endif
+{
+#if (PVK_USE_EXT_DEBUG_UTILS)
+    instance_spy->get_logger().set_userdata(this);
+    debugger->get_logger().set_userdata(this);
+#endif
+    other.m_vk_instance = VK_NULL_HANDLE;
 }
 
 } // namespace pvk

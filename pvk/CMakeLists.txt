@@ -42,11 +42,12 @@ add_library(pvk_headers INTERFACE)
 target_include_directories(pvk_headers INTERFACE include)
 target_link_libraries(pvk_headers INTERFACE glad_headers)
 
-
+add_library(pvk_internal_headers INTERFACE)
+target_include_directories(pvk_internal_headers INTERFACE include/internal)
 
 add_library(pvk_allocator OBJECT vk_allocator.cc)
 set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(pvk_allocator PRIVATE pvk_headers)
+target_link_libraries(pvk_allocator PRIVATE pvk_headers pvk_internal_headers)
 target_pvk_options(pvk_allocator)
 
 if (PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
@@ -62,14 +63,12 @@ endif()
 add_library(pvk_objects OBJECT)
 pvk_link_export(pvk_objects)
 set_property(TARGET pvk_objects PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(pvk_objects PRIVATE pvk_headers)
+target_link_libraries(pvk_objects PRIVATE pvk_headers pvk_internal_headers)
 target_pvk_options(pvk_objects)
 target_sources(pvk_objects PRIVATE
     log_global.cc
     logger.cc
-    vk_device_ctx.cc
     vk_device_ctx_impl.cc
-    vk_instance_ctx.cc
     vk_instance_ctx_impl.cc
     vk_loader.cc
 )
@@ -83,7 +82,7 @@ endif()
 if (PVK_ANY_OF_EXTENSIONS_IN_USE)
     add_library(pvk_extensions_objects OBJECT)
     target_pvk_options(pvk_extensions_objects)
-    target_link_libraries(pvk_extensions_objects PRIVATE pvk_headers)
+    target_link_libraries(pvk_extensions_objects PRIVATE pvk_headers pvk_internal_headers)
     target_include_directories(pvk_extensions_objects PRIVATE include/pvk)
 endif()
 

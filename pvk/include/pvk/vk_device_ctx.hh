@@ -1,29 +1,36 @@
 #pragma once
 
-#include <cstddef>
-#include <memory>
 #include <optional>
+#include <string>
 
+#include <cstddef>
+
+#include <pvk/physical_device.hh>
 #include <pvk/vk_instance_ctx.hh>
+
+#include <pvk/symvis.hh>
 
 namespace pvk {
 
-struct DeviceContext
+struct PVK_API alignas(std::max_align_t) DeviceContext
 {
-    std::optional<DeviceContext>
-        create(std::shared_ptr<InstanceContext> instance) noexcept;
-
+    static std::optional<DeviceContext> create(PhysicalDevice &device
+    ) noexcept;
     DeviceContext(DeviceContext &&) noexcept;
     DeviceContext &operator=(DeviceContext &&) noexcept;
 
-    DeviceContext(const DeviceContext &) = delete;
-    DeviceContext &operator=(const DeviceContext &) = delete;
+    ~DeviceContext() noexcept;
+
+    std::string get_name() const;
+
+    DeviceContext(DeviceContext const &) = delete;
+    DeviceContext &operator=(DeviceContext const &) = delete;
 
   private:
-    DeviceContext() = default;
-    static constexpr size_t impl_size = 128;
+    static constexpr size_t impl_size = 1024;
     std::byte impl[impl_size];
     struct Impl;
+    DeviceContext(Impl &&) noexcept;
 };
 
 } // namespace pvk

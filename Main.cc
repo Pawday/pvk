@@ -1,16 +1,33 @@
+#include <algorithm>
 #include <cstdlib>
 #include <format>
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
+#include "pvk/physical_device.hh"
+#include "pvk/vk_device_ctx.hh"
 #include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_loader.hh"
 
 using namespace pvk;
 
-std::optional<Loader> load_vulkan_linux(int argc, char const *const *argv)
+#if defined(USE_WINDOWS_VULKAN)
+
+std::optional<Loader> load_vulkan(int argc, char const *const *argv)
+{
+    (void)argc;
+    (void)argv;
+    return Loader::load("vulkan-1");
+}
+
+#else
+
+std::optional<Loader> load_vulkan(int argc, char const *const *argv)
 {
     std::string_view vk_so_linux_default_path("/usr/lib/libvulkan.so");
     std::string vk_so_linux_path;
@@ -26,12 +43,7 @@ std::optional<Loader> load_vulkan_linux(int argc, char const *const *argv)
     return Loader::load(vk_so_linux_path);
 }
 
-std::optional<Loader> load_vulkan_win32(int argc, char const *const *argv)
-{
-    (void)argc;
-    (void)argv;
-    return Loader::load("vulkan-1");
-}
+#endif
 
 struct Application
 {
@@ -60,6 +72,8 @@ struct Application
 
   private:
     std::optional<InstanceContext> m_vk_context;
+
+    std::vector<DeviceContext> devices;
 };
 
 Application::Application()
@@ -68,12 +82,16 @@ Application::Application()
     if (!m_vk_context) {
         return;
     }
+
+    auto raw_devices = m_vk_context->get_devices();
+    auto ctx = DeviceContext::create(raw_devices[0]);
+    auto ctx2 = DeviceContext::create(raw_devices[1]);
+
 }
 
 int main(int argc, char **argv)
 {
-    std::optional<Loader> vk_loader_ctx = load_vulkan_linux(argc, argv);
-    // std::optional<Loader> vk_loader_ctx = load_vulkan_win32(argc, argv);
+    std::optional<Loader> vk_loader_ctx = load_vulkan(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";
         return EXIT_FAILURE;

@@ -6,7 +6,7 @@
 #include <pvk/logger.hh>
 #include <string_view>
 
-#include "log_utils.hh"
+#include "pvk/log_utils.hh"
 
 namespace pvk {
 

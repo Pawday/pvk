@@ -45,6 +45,7 @@ target_sources(Main PRIVATE
 )
 
 if (WIN32)
+    target_compile_options(Main_objects PRIVATE USE_WINDOWS_VULKAN)
     target_link_libraries(Main PRIVATE pvk_static)
     return()
 endif()

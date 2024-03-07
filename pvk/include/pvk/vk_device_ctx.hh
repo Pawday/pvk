@@ -21,7 +21,7 @@ struct PVK_API alignas(std::max_align_t) DeviceContext
 
     ~DeviceContext() noexcept;
 
-    std::string get_name() const;
+    std::string get_name();
 
     DeviceContext(DeviceContext const &) = delete;
     DeviceContext &operator=(DeviceContext const &) = delete;

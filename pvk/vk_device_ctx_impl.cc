@@ -9,6 +9,7 @@
 #include <pvk/physical_device.hh>
 #include <pvk/vk_device_ctx.hh>
 #include <pvk/vk_instance_ctx.hh>
+#include <variant>
 
 #include "pvk/log.hh"
 #include "pvk/phy_device_conv.hh"
@@ -33,13 +34,19 @@ struct alignas(DeviceContext) DeviceContext::Impl
     }
 
     Impl(Impl &&o) noexcept
-        : l(std::move(o.l)), props(o.props), m_phy_device(o.m_phy_device)
+        : l(std::move(o.l)), device_meta(o.device_meta), m_phy_device(o.m_phy_device)
     {
     }
 
-    std::string get_name() const
+    std::string get_name()
     {
-        return props.deviceName;
+        if (!std::holds_alternative<VkPhysicalDeviceProperties>(device_meta)) {
+            VkPhysicalDeviceProperties new_props;
+            vkGetPhysicalDeviceProperties(m_phy_device, &new_props);
+            device_meta = new_props;
+        }
+
+        return std::get<VkPhysicalDeviceProperties>(device_meta).deviceName;
     }
 
     Impl(const Impl &) = delete;
@@ -70,7 +77,8 @@ struct alignas(DeviceContext) DeviceContext::Impl
 
     Logger l;
 
-    VkPhysicalDeviceProperties props{};
+    std::variant<VkPhysicalDeviceProperties, VkPhysicalDeviceFeatures> device_meta;
+
 
     VkPhysicalDevice m_phy_device = VK_NULL_HANDLE;
 };
@@ -78,8 +86,9 @@ struct alignas(DeviceContext) DeviceContext::Impl
 DeviceContext::Impl::Impl(VkPhysicalDevice &&device)
     : m_phy_device(std::move(device))
 {
-    vkGetPhysicalDeviceProperties(m_phy_device, &props);
-    l.info(std::string(props.deviceName));
+    VkPhysicalDeviceProperties new_props;
+    vkGetPhysicalDeviceProperties(m_phy_device, &new_props);
+    device_meta = new_props;
 }
 
 std::optional<DeviceContext> DeviceContext::create(PhysicalDevice &device
@@ -110,7 +119,7 @@ DeviceContext::~DeviceContext() noexcept
     Impl::cast_from(impl).~Impl();
 }
 
-std::string DeviceContext::get_name() const
+std::string DeviceContext::get_name()
 {
     return Impl::cast_from(impl).get_name();
 }

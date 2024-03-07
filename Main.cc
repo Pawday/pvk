@@ -1,15 +1,11 @@
-#include <algorithm>
 #include <cstdlib>
 #include <format>
 #include <iostream>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
-#include "pvk/physical_device.hh"
 #include "pvk/vk_device_ctx.hh"
 #include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_loader.hh"
@@ -84,13 +80,15 @@ Application::Application()
     }
 
     auto raw_devices = m_vk_context->get_devices();
-    auto ctx = DeviceContext::create(raw_devices[0]);
-    auto ctx2 = DeviceContext::create(raw_devices[1]);
 
+    for (auto &d : raw_devices) {
+        std::cout << DeviceContext::create(d)->get_name() << '\n';
+    }
 }
 
 int main(int argc, char **argv)
 {
+
     std::optional<Loader> vk_loader_ctx = load_vulkan(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";

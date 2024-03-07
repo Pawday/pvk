@@ -1,45 +1,57 @@
+#include <algorithm>
 #include <cstdlib>
 #include <format>
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include "pvk/physical_device.hh"
 #include "pvk/vk_device_ctx.hh"
 #include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_loader.hh"
 
 using namespace pvk;
 
+namespace {
+static std::optional<Loader> load_vulkan(int argc, char const *const *argv)
+{
+
 #if defined(USE_WINDOWS_VULKAN)
-
-std::optional<Loader> load_vulkan(int argc, char const *const *argv)
-{
-    (void)argc;
-    (void)argv;
-    return Loader::load("vulkan-1");
-}
-
+    constexpr std::string_view vulkan_dso_default("vulkan-1");
 #else
+    constexpr std::string_view vulkan_dso_default("libvulkan.so");
+#endif
 
-std::optional<Loader> load_vulkan(int argc, char const *const *argv)
-{
-    std::string_view vk_so_linux_default_path("/usr/lib/libvulkan.so");
-    std::string vk_so_linux_path;
+    std::string vk_dso_location;
     if (argc < 2) {
-        vk_so_linux_path = vk_so_linux_default_path;
+        vk_dso_location = vulkan_dso_default;
     } else {
-        vk_so_linux_path = argv[1];
+        vk_dso_location = argv[1];
         std::cout << std::format(
             "[INFO]: Loading alternative Vulkan library from \"{}\"\n",
-            vk_so_linux_path
+            vk_dso_location
         );
     }
-    return Loader::load(vk_so_linux_path);
+    return Loader::load(vk_dso_location);
 }
 
-#endif
+static std::string device_type_to_str(pvk::DeviceType t)
+{
+    switch (t) {
+    case DeviceType::GPU:
+        return "GPU";
+    case DeviceType::CPU:
+        return "CPU";
+    case DeviceType::UNKNOWN:
+        return "UNKNOWN";
+    }
+}
+
+} // namespace
 
 struct Application
 {
@@ -58,12 +70,16 @@ struct Application
         return true;
     }
 
-    bool is_not_valid() const
+    void log_devices()
     {
-        if (!*this) {
-            return true;
-        }
-        return false;
+        auto log_device = [](DeviceContext &device) {
+            std::cout << std::format(
+                "Found {} device \"{}\"\n",
+                device_type_to_str(device.get_device_type()),
+                device.get_name()
+            );
+        };
+        std::ranges::for_each(devices, log_device);
     }
 
   private:
@@ -79,16 +95,30 @@ Application::Application()
         return;
     }
 
-    auto raw_devices = m_vk_context->get_devices();
+    auto make_device_context = [](PhysicalDevice device) {
+        return pvk::DeviceContext::create(device);
+    };
 
-    for (auto &d : raw_devices) {
-        std::cout << DeviceContext::create(d)->get_name() << '\n';
+    auto keep_valid_context = [](const std::optional<DeviceContext> &ctx) {
+        return ctx.has_value();
+    };
+
+    auto unwrap_context = [](std::optional<DeviceContext> ctx) {
+        return std::move(*ctx);
+    };
+
+    using namespace std::ranges::views;
+    auto device_ctx_list = m_vk_context->get_devices() |
+        transform(make_device_context) | filter(keep_valid_context) |
+        transform(unwrap_context);
+
+    for (auto d : device_ctx_list) {
+        devices.emplace_back(std::move(d));
     }
 }
 
 int main(int argc, char **argv)
 {
-
     std::optional<Loader> vk_loader_ctx = load_vulkan(argc, argv);
     if (!vk_loader_ctx) {
         std::cerr << "Can not use Vulkan\n";
@@ -106,5 +136,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    return 0;
+    app.log_devices();
+
+    return EXIT_SUCCESS;
 }

@@ -1,10 +1,8 @@
 #include <algorithm>
 #include <format>
-#include <iostream>
 #include <iterator>
 #include <limits>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <utility>
 
@@ -44,12 +42,12 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
 
     if (*proc_addres == NULL) {
         pvk::error(std::format(
-            "Well, Vulkan vendor by whatever fucking reason desided "
+            "Well, Vulkan vendor by whatever reason desided "
             "to put !!valid!! Vulkan function \"{0}\" at addres 0 "
             "(!!ZERO!!) "
             "current loader is not able to handle that so we assume there "
             "is "
-            "no \"{0}\" symbol (FUCK YOU VENDOR)\n",
+            "no \"{0}\" symbol (FUCK YOU VENDOR)",
             vk_proc_name
         ));
         return NULL;

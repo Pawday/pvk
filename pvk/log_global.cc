@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <iostream>
@@ -8,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "pvk/log.hh"
 #include "pvk/log_utils.hh"
 
 namespace pvk {
@@ -69,7 +68,7 @@ try {
 } catch (...) {
 }
 
-void trace(const std::string &message, const std::string &source = "") noexcept
+void trace(const std::string &message, const std::string &source) noexcept
 try {
     std::cerr << ansi_color(0x00, 0x55, 0x00);
     auto lines = split_ln(message);
@@ -83,4 +82,4 @@ try {
 } catch (...) {
 }
 
-} // namespace log
+} // namespace pvk

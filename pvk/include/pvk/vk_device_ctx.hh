@@ -12,16 +12,23 @@
 
 namespace pvk {
 
+enum class DeviceType
+{
+    UNKNOWN,
+    GPU,
+    CPU,
+};
+
 struct PVK_API alignas(std::max_align_t) DeviceContext
 {
-    static std::optional<DeviceContext> create(PhysicalDevice &device
-    ) noexcept;
+    static std::optional<DeviceContext> create(PhysicalDevice &device) noexcept;
     DeviceContext(DeviceContext &&) noexcept;
     DeviceContext &operator=(DeviceContext &&) noexcept;
 
     ~DeviceContext() noexcept;
 
     std::string get_name();
+    DeviceType get_device_type();
 
     DeviceContext(DeviceContext const &) = delete;
     DeviceContext &operator=(DeviceContext const &) = delete;

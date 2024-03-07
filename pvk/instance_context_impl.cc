@@ -259,25 +259,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         }
     }
 
-    bool first = true;
-    auto line_break_if_not_first = [&first, &l]() {
-        if (first) {
-            first = false;
-            return;
-        }
-        l.info("");
-    };
-
-    [[maybe_unused]] auto debug_line_break_if_not_first = [&first, &l]() {
-        if (first) {
-            first = false;
-            return;
-        }
-        l.debug("");
-    };
-
     if (layer_extensions.size() != 0) {
-        line_break_if_not_first();
         l.info(std::format("+{:=^50}+", " Layers "));
         dump_extensions_per_layer(l, layer_extensions);
         l.info(std::format("+{:=^50}+", ""));
@@ -285,7 +267,6 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
 
 #if defined(PVK_USE_KHR_VALIDATION_LAYER)
     if (vk_layers.contains("VK_LAYER_KHRONOS_validation")) {
-        line_break_if_not_first();
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
@@ -294,7 +275,6 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
 #endif
 
     if (full_extesions_list.size() != 0) {
-        line_break_if_not_first();
         l.info(std::format("+{:=^50}+", " All instance extensions "));
         for (auto &ext : full_extesions_list) {
             l.info(std::format("| {: <49}|", ext));
@@ -319,7 +299,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         impl.instance_spy->get_logger().set_userdata(&impl);
         impl.instance_spy->get_logger().set_callback(debug_utils_log_cb);
         impl.debugger = DebugUtilsContext::create(impl.m_allocator);
-        impl.debugger->get_logger().set_name("Debug Utils");
+        impl.debugger->get_logger().set_name("DebugUtils");
         impl.debugger->get_logger().set_userdata(&impl);
         impl.debugger->get_logger().set_callback(debug_utils_log_cb);
     }
@@ -365,12 +345,11 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
     }
 
     if (has_debug_utils && !instance_debug_attach_status) {
-        l.warning("Attaching early messenger failue");
+        l.warning("Attaching SpyLog messenger failue");
     }
 
     if (has_debug_utils && instance_debug_attach_status) {
-        debug_line_break_if_not_first();
-        l.debug("Early messenger attached to instance");
+        l.debug("SpyLog messenger attached to instance");
     }
 #endif
 
@@ -399,7 +378,6 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
 
     if (has_debug_utils && debug_utils_load_status) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
-        line_break_if_not_first();
         l.info("Extension \"VK_EXT_debug_utils\" is loaded");
     }
 

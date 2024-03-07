@@ -191,9 +191,8 @@ VkResult DebugUtilsEXT::SetObjectName(
     return setObjectName(device, pNameInfo);
 }
 
-VkResult DebugUtilsEXT::SetObjectTag(
-    VkDevice device, const ObjectTagInfo *pTagInfo
-)
+VkResult
+    DebugUtilsEXT::SetObjectTag(VkDevice device, const ObjectTagInfo *pTagInfo)
 {
     return setObjectTag(device, pTagInfo);
 }

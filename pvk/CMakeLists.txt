@@ -45,7 +45,7 @@ target_link_libraries(pvk_headers INTERFACE glad_headers)
 add_library(pvk_internal_headers INTERFACE)
 target_include_directories(pvk_internal_headers INTERFACE include/internal)
 
-add_library(pvk_allocator OBJECT vk_allocator.cc)
+add_library(pvk_allocator OBJECT allocator.cc)
 set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk_allocator PRIVATE pvk_headers pvk_internal_headers)
 target_pvk_options(pvk_allocator)
@@ -66,11 +66,11 @@ set_property(TARGET pvk_objects PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk_objects PRIVATE pvk_headers pvk_internal_headers)
 target_pvk_options(pvk_objects)
 target_sources(pvk_objects PRIVATE
+    device_context_impl.cc
+    instance_context_impl.cc
+    loader.cc
     log_global.cc
     logger.cc
-    vk_device_ctx_impl.cc
-    vk_instance_ctx_impl.cc
-    vk_loader.cc
 )
 
 if(WIN32)

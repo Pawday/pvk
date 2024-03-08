@@ -15,9 +15,9 @@ struct Logger
         TRACE
     };
 
-    Logger() noexcept = default;
+    Logger() = default;
     Logger(Logger &&) = default;
-    ~Logger() noexcept = default;
+    ~Logger() = default;
 
     Logger(const Logger &&) = delete;
     Logger &operator=(const Logger &) = delete;

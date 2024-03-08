@@ -64,6 +64,10 @@ struct alignas(DeviceContext) DeviceContext::Impl
             return;
         }
 
+        if (m_device == VK_NULL_HANDLE) {
+            return;
+        }
+
         disconnect();
     }
 

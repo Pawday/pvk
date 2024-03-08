@@ -61,12 +61,12 @@ struct Allocator::ImplFriend
 
         size_t aligned_size = size;
 
-#if defined(PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
         if (size % alignment != 0) {
             aligned_size = ((size / alignment) + 1) * alignment;
+#if defined(PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
             warn_memsize_align(size, alignment, aligned_size);
-        }
 #endif
+        }
 
         /*
          * VK_LAYER_NV_optimus produce heap buffer overflow

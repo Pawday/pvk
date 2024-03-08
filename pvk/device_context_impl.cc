@@ -261,13 +261,13 @@ struct alignas(DeviceContext) DeviceContext::Impl
 
         switch (vk_device_type) {
         case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-            gpu_type = "INTEGRATED";
+            gpu_type = "Integrated";
             break;
         case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-            gpu_type = "DISCRETE";
+            gpu_type = "Discrete";
             break;
         case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            gpu_type = "VIRTUAL";
+            gpu_type = "Virtual";
             break;
         default:
             break;

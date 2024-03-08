@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <optional>
 #include <string>
 #include <utility>
@@ -26,6 +25,6 @@ struct SymLoader
   private:
     SymLoader();
     std::string m_library_path;
-    void *m_handle = NULL;
+    void *m_handle = nullptr;
 };
 } // namespace pvk

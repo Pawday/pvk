@@ -16,7 +16,7 @@ enum class DeviceType
 {
     UNKNOWN,
     GPU,
-    CPU,
+    CPU
 };
 
 struct PVK_API alignas(std::max_align_t) DeviceContext

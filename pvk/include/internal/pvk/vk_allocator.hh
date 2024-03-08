@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
-
 #include <unordered_map>
+
+#include <cstddef>
 
 #include "pvk/vk_api.hh"
 
@@ -22,6 +22,7 @@ struct Allocator
 
     // new Allocator passes its addres at creation
     // it should be alive at that specfic addres until it death
+    // use movable wrapper for it (std::unique_ptr<Allocator> is highly recomended)
 
     Allocator(const Allocator &) = delete;
     Allocator &operator=(const Allocator &) = delete;

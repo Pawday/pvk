@@ -3,7 +3,6 @@
 #include <format>
 #include <iostream>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -95,25 +94,13 @@ Application::Application()
         return;
     }
 
-    auto make_device_context = [](PhysicalDevice device) {
-        return pvk::DeviceContext::create(device);
-    };
-
-    auto keep_valid_context = [](const std::optional<DeviceContext> &ctx) {
-        return ctx.has_value();
-    };
-
-    auto unwrap_context = [](std::optional<DeviceContext> ctx) {
-        return std::move(*ctx);
-    };
-
-    using namespace std::ranges::views;
-    auto device_ctx_list = m_vk_context->get_devices() |
-        transform(make_device_context) | filter(keep_valid_context) |
-        transform(unwrap_context);
-
-    for (auto d : device_ctx_list) {
-        devices.emplace_back(std::move(d));
+    std::vector<PhysicalDevice> dev_handles = m_vk_context->get_devices();
+    for (PhysicalDevice &device : dev_handles) {
+        auto device_context = DeviceContext::create(device);
+        if (!device_context) {
+            continue;
+        }
+        this->devices.emplace_back(std::move(*device_context));
     }
 }
 

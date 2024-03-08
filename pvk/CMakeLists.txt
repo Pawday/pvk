@@ -71,6 +71,7 @@ target_sources(pvk_objects PRIVATE
     loader.cc
     log_global.cc
     logger.cc
+    layer_utils.cc
 )
 
 if(WIN32)

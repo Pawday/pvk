@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <pvk/log.hh>
 #include <pvk/logger.hh>
 #include <pvk/physical_device.hh>
 #include <pvk/vk_allocator.hh>
@@ -26,6 +27,7 @@
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
+#include "pvk/layer_utils.hh"
 #include "pvk/phy_device_conv.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
@@ -120,114 +122,6 @@ InstanceContext::Impl::~Impl() noexcept
 #endif
 }
 
-namespace {
-
-static std::unordered_set<std::string>
-    get_layer_extensions(Logger &l, const char *layer_name)
-{
-    uint32_t nb_extensions = 0;
-    vkEnumerateInstanceExtensionProperties(layer_name, &nb_extensions, nullptr);
-    std::vector<VkExtensionProperties> layer_exts(nb_extensions);
-    vkEnumerateInstanceExtensionProperties(
-        layer_name, &nb_extensions, layer_exts.data()
-    );
-
-    std::unordered_set<std::string> output;
-    output.reserve(nb_extensions);
-    for (auto &ext : layer_exts) {
-        std::string ext_name(ext.extensionName);
-        if (output.contains(ext_name)) {
-            std::string dup_warn = std::format(
-                "Extention \"{}\" mentioned more than once", ext_name
-            );
-            l.warning(dup_warn);
-            continue;
-        }
-        output.emplace(std::move(ext_name));
-    }
-
-    return output;
-}
-
-static std::unordered_set<std::string> get_layers(Logger &l)
-{
-    uint32_t nb_layers = 0;
-    vkEnumerateInstanceLayerProperties(&nb_layers, nullptr);
-    std::vector<VkLayerProperties> availableLayers(nb_layers);
-    vkEnumerateInstanceLayerProperties(&nb_layers, availableLayers.data());
-
-    std::unordered_set<std::string> output;
-    output.reserve(nb_layers);
-
-    for (auto &layer : availableLayers) {
-        std::string layer_name(layer.layerName);
-        if (output.contains(layer_name)) {
-            l.warning(
-                std::format("Layer {} mentioned more than once", layer_name)
-            );
-            continue;
-        }
-        output.emplace(layer_name);
-    }
-    return output;
-}
-
-using LayerExtMap =
-    std::unordered_map<std::string, std::unordered_set<std::string>>;
-
-static LayerExtMap get_layers_extensions(
-    Logger &l, const std::unordered_set<std::string> &layer_names
-)
-{
-    LayerExtMap output;
-    for (const auto &layer_name : layer_names) {
-        std::unordered_set<std::string> layer_extensions =
-            get_layer_extensions(l, layer_name.c_str());
-
-        auto layer_extensions_list = output.find(layer_name);
-
-        if (layer_extensions_list == std::end(output)) {
-            std::unordered_set<std::string> new_extension_list;
-            new_extension_list.reserve(layer_extensions.size());
-            output.emplace(layer_name, std::move(new_extension_list));
-
-            layer_extensions_list = output.find(layer_name);
-            if (layer_extensions_list == std::end(output)) {
-                l.error("No memory for layer's extension list");
-                continue;
-            }
-        }
-
-        for (auto &extension : layer_extensions) {
-            layer_extensions_list->second.emplace(std::move(extension));
-        }
-    }
-    return output;
-}
-
-static void dump_extensions_per_layer(Logger &l, const LayerExtMap &lay_exts)
-{
-    bool first = true;
-    for (auto &layer : lay_exts) {
-        if (first) {
-            first = false;
-        } else {
-            l.info(std::format("| {: <49}|", ""));
-        }
-
-        l.info(std::format("| {: <49}|", layer.first));
-
-        for (auto &extension : layer.second) {
-            l.info(std::format("|   {: <47}|", std::string(extension)));
-        }
-        if (layer.second.size() == 0) {
-            l.info(std::format("|   {: <47}|", "(No extensions)"));
-        }
-    }
-}
-
-}; // namespace
-
 std::optional<InstanceContext> InstanceContext::create() noexcept
 {
     return InstanceContext::Impl::create();
@@ -236,22 +130,22 @@ std::optional<InstanceContext> InstanceContext::create() noexcept
 std::optional<InstanceContext> InstanceContext::Impl::create()
 {
     InstanceContext::Impl impl;
+    impl.m_allocator = std::make_unique<Allocator>();
     impl.l.set_name("InstanceContext");
 
     Logger &l = impl.l;
 
     std::unordered_set<std::string> full_extesions_list;
-    static std::vector<std::string_view> enabled_layers;
-    static std::vector<std::string_view> enabled_extensions;
+    std::vector<std::string_view> enabled_layers;
+    std::vector<std::string_view> enabled_extensions;
 
-    std::unordered_set<std::string> vk_layers = get_layers(l);
-
-    auto implicit_extensions = get_layer_extensions(l, nullptr);
+    auto implicit_extensions = get_instance_layer_extensions(nullptr, l);
     for (auto &implicit_extension : implicit_extensions) {
         full_extesions_list.emplace(std::move(implicit_extension));
     }
 
-    LayerExtMap layer_extensions = get_layers_extensions(l, vk_layers);
+    std::unordered_set<std::string> vk_layers = get_instance_layers(l);
+    LayerExtMap layer_extensions = get_instance_layers_extensions(vk_layers, l);
 
     for (auto &layer : layer_extensions) {
         for (auto &layer_ext_name : layer.second) {
@@ -259,11 +153,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         }
     }
 
-    if (layer_extensions.size() != 0) {
-        l.info(std::format("+{:=^50}+", " Layers "));
-        dump_extensions_per_layer(l, layer_extensions);
-        l.info(std::format("+{:=^50}+", ""));
-    }
+    dump_extensions_per_layer(layer_extensions, "Instance Layers", l);
 
 #if defined(PVK_USE_KHR_VALIDATION_LAYER)
     if (vk_layers.contains("VK_LAYER_KHRONOS_validation")) {
@@ -281,8 +171,6 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         }
         l.info(std::format("+{:=^50}+", ""));
     }
-
-    impl.m_allocator = std::make_unique<Allocator>();
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     bool has_debug_utils = full_extesions_list.contains("VK_EXT_debug_utils");
@@ -366,6 +254,13 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         return std::nullopt;
     }
     impl.m_vk_instance = new_instance;
+    l.info(std::format(
+        "Created instance with handle 0x{:x}",
+        reinterpret_cast<size_t>(impl.m_vk_instance)
+    ));
+    l.set_name(std::format(
+        "InstanceContext 0x{:x}", reinterpret_cast<size_t>(impl.m_vk_instance)
+    ));
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     if (has_debug_utils) {
@@ -378,7 +273,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
 
     if (has_debug_utils && debug_utils_load_status) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
-        l.info("Extension \"VK_EXT_debug_utils\" is loaded");
+        l.info("Extension \"VK_EXT_debug_utils\" is enabled");
     }
 
     bool primary_debugger_create_status = false;
@@ -400,8 +295,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
     return InstanceContext(std::move(impl));
 }
 
-std::vector<PhysicalDevice>
-    InstanceContext::get_devices() const
+std::vector<PhysicalDevice> InstanceContext::get_devices() const
 {
     std::vector<PhysicalDevice> output;
 

@@ -19,14 +19,12 @@ if(TARGET pvk_shared)
 endif()
 
 if(NOT ${SOME_PVK_TARGET_EXIST})
-    message(WARNING "No pvk library found")
-    return()
+    message(FATAL_ERROR "No pvk library found")
 endif()
 
 
 if (WIN32 AND NOT TARGET pvk_static)
-    message(WARNING "Linking Main with pvk_shared is not supported on Windows")
-    return()
+    message(FATAL_ERROR "Linking Main with pvk_shared is not supported on Windows")
 endif()
 
 add_library(Main_objects OBJECT)

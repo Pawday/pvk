@@ -40,10 +40,10 @@ endif()
 
 add_library(pvk_headers INTERFACE)
 target_include_directories(pvk_headers INTERFACE include)
-target_link_libraries(pvk_headers INTERFACE glad_headers)
 
 add_library(pvk_internal_headers INTERFACE)
 target_include_directories(pvk_internal_headers INTERFACE include/internal)
+target_link_libraries(pvk_internal_headers INTERFACE glad_headers)
 
 add_library(pvk_allocator OBJECT allocator.cc)
 set_property(TARGET pvk_allocator PROPERTY POSITION_INDEPENDENT_CODE ON)

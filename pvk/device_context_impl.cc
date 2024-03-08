@@ -41,7 +41,7 @@ struct alignas(DeviceContext) DeviceContext::Impl
         return out;
     }
 
-    void connect();
+    bool connect();
 
     void disconnect()
     {
@@ -158,7 +158,7 @@ struct alignas(DeviceContext) DeviceContext::Impl
             gpu_type = "Discrete";
             break;
         case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            gpu_type = "VIRTUAL";
+            gpu_type = "Virtual";
             break;
         default:
             break;
@@ -184,7 +184,6 @@ struct alignas(DeviceContext) DeviceContext::Impl
         l.set_name(std::format(
             "DeviceContext 0x{:x}", reinterpret_cast<size_t>(m_phy_device)));
         m_alloc = std::make_unique<Allocator>();
-        connect();
     }
 
     Logger l;
@@ -201,11 +200,11 @@ struct alignas(DeviceContext) DeviceContext::Impl
     VkDevice m_device = VK_NULL_HANDLE;
 };
 
-void DeviceContext::Impl::connect()
+bool DeviceContext::Impl::connect()
 {
     if (m_device != VK_NULL_HANDLE) {
         l.warning("Connection already established: Ignore connect request");
-        return;
+        return false;
     }
 
     std::unordered_set<std::string> full_extesions_list;
@@ -259,7 +258,7 @@ void DeviceContext::Impl::connect()
     if (!enabled_layer_names || !enabled_ext_names) {
         l.warning(
             "Device connection failue: No host memory for connection info");
-        return;
+        return false;
     }
 
     load_queue_families();
@@ -269,7 +268,7 @@ void DeviceContext::Impl::connect()
 
     if (families.size() == 0) {
         l.warning("No single queue family to configure from");
-        return;
+        return false;
     }
 
     VkDeviceQueueCreateInfo main_queue{};
@@ -298,10 +297,12 @@ void DeviceContext::Impl::connect()
     if (VK_SUCCESS != create_device_status) {
         l.warning(std::format(
             "Device connection failue: {}", vk_to_str(create_device_status)));
-        return;
+        return false;
     }
 
     m_device = new_logical_device;
+
+    return true;
 }
 
 std::optional<DeviceContext>
@@ -340,6 +341,11 @@ std::string DeviceContext::get_name()
 DeviceType DeviceContext::get_device_type()
 {
     return Impl::cast_from(impl).get_device_type();
+}
+
+bool DeviceContext::connect()
+{
+    return Impl::cast_from(impl).connect();
 }
 
 } // namespace pvk

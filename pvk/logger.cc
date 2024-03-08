@@ -13,16 +13,16 @@ namespace pvk {
 struct Logger::Detail
 {
     static void dispatch_line(
-        const void *user_data, Logger::Level level, std::string_view &message
-    ) noexcept
+        const void *user_data,
+        Logger::Level level,
+        std::string_view &message) noexcept
     try {
         const Logger *logger = reinterpret_cast<const Logger *>(user_data);
 
         std::string mangled_message;
 
         const std::string addr_name = std::format(
-            "pvk::Logger at 0x{:x}", reinterpret_cast<size_t>(logger)
-        );
+            "pvk::Logger at 0x{:x}", reinterpret_cast<size_t>(logger));
 
         if (logger->m_source_name.empty()) {
             mangled_message = std::format("[{}] {}", addr_name, message);
@@ -58,8 +58,9 @@ struct Logger::Detail
     }
 
     static void dispatch(
-        const void *user_data, Logger::Level level, const std::string &message
-    ) noexcept
+        const void *user_data,
+        Logger::Level level,
+        const std::string &message) noexcept
     try {
         auto lines = split_ln(message);
 

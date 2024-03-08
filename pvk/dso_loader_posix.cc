@@ -40,8 +40,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
         pvk::warning(std::format(
             "Failue loading library from: \"{}\" reason \"{}\"\n",
             library_file,
-            load_status
-        ));
+            load_status));
         return std::nullopt;
     }
 

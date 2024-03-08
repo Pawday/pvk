@@ -59,8 +59,9 @@ struct alignas(InstanceContext) InstanceContext::Impl
 
 #if (PVK_USE_EXT_DEBUG_UTILS)
     static void debug_utils_log_cb(
-        void *user_data, Logger::Level level, const std::string &message
-    ) noexcept;
+        void *user_data,
+        Logger::Level level,
+        const std::string &message) noexcept;
     std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
     std::unique_ptr<DebugUtilsContext> debugger = nullptr;
 #endif
@@ -74,8 +75,7 @@ struct alignas(InstanceContext) InstanceContext::Impl
         }
 
         static_assert(
-            InstanceContext::impl_size >= sizeof(InstanceContext::Impl)
-        );
+            InstanceContext::impl_size >= sizeof(InstanceContext::Impl));
         if (InstanceContext::impl_size < sizeof(InstanceContext::Impl)) {
             return false;
         }
@@ -240,24 +240,21 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
 
     VkInstance new_instance{};
     VkResult instance_create_status = vkCreateInstance(
-        &vk_instance_info, impl.m_allocator->get_callbacks(), &new_instance
-    );
+        &vk_instance_info, impl.m_allocator->get_callbacks(), &new_instance);
 
     if (instance_create_status != VK_SUCCESS) {
         l.error(std::format(
             "Creating vulkan context failue: \"{}\"",
-            vk_to_str(instance_create_status)
-        ));
+            vk_to_str(instance_create_status)));
         return std::nullopt;
     }
     impl.m_vk_instance = new_instance;
     l.info(std::format(
         "Created instance with handle 0x{:x}",
-        reinterpret_cast<size_t>(impl.m_vk_instance)
-    ));
+        reinterpret_cast<size_t>(impl.m_vk_instance)));
     l.set_name(std::format(
-        "InstanceContext 0x{:x}", reinterpret_cast<size_t>(impl.m_vk_instance)
-    ));
+        "InstanceContext 0x{:x}",
+        reinterpret_cast<size_t>(impl.m_vk_instance)));
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
     if (has_debug_utils) {
@@ -278,8 +275,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
     if (has_debug_utils && debug_utils_load_status &&
         impl.debugger != nullptr) {
         primary_debugger_create_status = impl.debugger->create_messenger(
-            new_instance, impl.m_allocator->get_callbacks()
-        );
+            new_instance, impl.m_allocator->get_callbacks());
     }
 
     if (primary_debugger_create_status) {
@@ -314,8 +310,7 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
     if (dev_enum_status != VK_SUCCESS) {
         l.warning(std::format(
             "Counting vulkan physical devices failue: \"{}\"",
-            vk_to_str(dev_enum_status)
-        ));
+            vk_to_str(dev_enum_status)));
         return {};
     }
     if (cnt_devices == 0) {
@@ -330,8 +325,7 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
         l.warning(std::format(
             "Enumerating vulkan physical devices failue: "
             "\"{}\"",
-            vk_to_str(dev_enum_status)
-        ));
+            vk_to_str(dev_enum_status)));
         return {};
     }
     return devices;
@@ -339,8 +333,7 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 void InstanceContext::Impl::debug_utils_log_cb(
-    void *user_data, Logger::Level level, const std::string &message
-) noexcept
+    void *user_data, Logger::Level level, const std::string &message) noexcept
 {
     InstanceContext::Impl &impl =
         *reinterpret_cast<InstanceContext::Impl *>(user_data);

@@ -35,8 +35,7 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
     auto proc_addres = vk_library->load_sym(vk_proc_name);
     if (!proc_addres) {
         pvk::error(
-            std::format("Fail to load Vulkan function {}\n", vk_proc_name)
-        );
+            std::format("Fail to load Vulkan function {}\n", vk_proc_name));
         return NULL;
     }
 
@@ -48,8 +47,7 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
             "current loader is not able to handle that so we assume there "
             "is "
             "no \"{0}\" symbol (FUCK YOU VENDOR)",
-            vk_proc_name
-        ));
+            vk_proc_name));
         return NULL;
     }
     return reinterpret_cast<GLADapiproc>(*proc_addres);
@@ -65,8 +63,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
     std::optional<SymLoader> vk_library = SymLoader::load(library);
     if (!vk_library) {
         pvk::warning(
-            std::format("Load shared Vulkan library \"{}\" failed\n", library)
-        );
+            std::format("Load shared Vulkan library \"{}\" failed\n", library));
         return std::nullopt;
     }
 
@@ -86,8 +83,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     if (std::numeric_limits<VKVersion::Major_t>::max() < vulkan_version_maj) {
         pvk::warning(std::format(
-            "Actual major version of vulkan is {}\n", vulkan_version_maj
-        ));
+            "Actual major version of vulkan is {}\n", vulkan_version_maj));
         version.major = std::numeric_limits<VKVersion::Major_t>::max();
     } else {
         version.major = vulkan_version_maj;
@@ -95,8 +91,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     if (std::numeric_limits<VKVersion::Minor_t>::max() < vulkan_version_min) {
         pvk::warning(std::format(
-            "Actual minor version of vulkan is {}\n", vulkan_version_min
-        ));
+            "Actual minor version of vulkan is {}\n", vulkan_version_min));
         version.minor = std::numeric_limits<VKVersion::Minor_t>::max();
     } else {
         version.minor = vulkan_version_min;

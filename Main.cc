@@ -32,8 +32,7 @@ static std::optional<Loader> load_vulkan(int argc, char const *const *argv)
         vk_dso_location = argv[1];
         std::cout << std::format(
             "[INFO]: Loading alternative Vulkan library from \"{}\"\n",
-            vk_dso_location
-        );
+            vk_dso_location);
     }
     return Loader::load(vk_dso_location);
 }
@@ -75,8 +74,7 @@ struct Application
             std::cout << std::format(
                 "Found {} device \"{}\"\n",
                 device_type_to_str(device.get_device_type()),
-                device.get_name()
-            );
+                device.get_name());
         };
         std::ranges::for_each(devices, log_device);
     }
@@ -114,8 +112,7 @@ int main(int argc, char **argv)
 
     Loader::VKVersion version = vk_loader_ctx->get_version();
     std::cout << std::format(
-        "Loaded Vulkan {}.{}\n", version.major, version.minor
-    );
+        "Loaded Vulkan {}.{}\n", version.major, version.minor);
 
     Application app;
     if (!app) {

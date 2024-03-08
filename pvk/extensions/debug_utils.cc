@@ -20,8 +20,11 @@ using MessageSeverityFlagBits = DebugUtilsEXT::MessageSeverityFlagBits;
 using PFN_BeginLabel = void (*)(VkCommandBuffer, const Label *);
 using PFN_EndLabel = void (*)(VkCommandBuffer);
 using PFN_InsertLabel = void (*)(VkCommandBuffer, const Label *);
-using PFN_CreateMessenger =
-    VkResult (*)(VkInstance, const MessengerCreateInfo *, const VkAllocationCallbacks *, Messenger *);
+using PFN_CreateMessenger = VkResult (*)(
+    VkInstance,
+    const MessengerCreateInfo *,
+    const VkAllocationCallbacks *,
+    Messenger *);
 using PFN_DestroyMessenger =
     void (*)(VkInstance, Messenger, const VkAllocationCallbacks *);
 using PFN_QueueBeginLabel = void (*)(VkQueue, const Label *);
@@ -29,8 +32,11 @@ using PFN_QueueEndLabel = void (*)(VkQueue);
 using PFN_QueueInsertLabel = void (*)(VkQueue, const Label *);
 using PFN_SetObjectName = VkResult (*)(VkDevice, const ObjectNameInfo *);
 using PFN_SetObjectTag = VkResult (*)(VkDevice, const ObjectTagInfo *);
-using PFN_SubmitMessage =
-    void (*)(VkInstance, MessageSeverityFlagBits, MessageTypeFlags, const MessengerCallbackData *);
+using PFN_SubmitMessage = void (*)(
+    VkInstance,
+    MessageSeverityFlagBits,
+    MessageTypeFlags,
+    const MessengerCallbackData *);
 
 namespace {
 static bool loaded = false;
@@ -89,38 +95,27 @@ bool DebugUtilsEXT::load(VkInstance instance) noexcept
     }
 
     beginLabel = reinterpret_cast<PFN_BeginLabel>(
-        vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT"));
     endLabel = reinterpret_cast<PFN_EndLabel>(
-        vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT"));
     insertLabel = reinterpret_cast<PFN_InsertLabel>(
-        vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT"));
     createMessenger = reinterpret_cast<PFN_CreateMessenger>(
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
     destroyMessenger = reinterpret_cast<PFN_DestroyMessenger>(
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
     queueBeginLabel = reinterpret_cast<PFN_QueueBeginLabel>(
-        vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT"));
     queueEndLabel = reinterpret_cast<PFN_QueueEndLabel>(
-        vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT"));
     queueInsertLabel = reinterpret_cast<PFN_QueueInsertLabel>(
-        vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT"));
     setObjectName = reinterpret_cast<PFN_SetObjectName>(
-        vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
     setObjectTag = reinterpret_cast<PFN_SetObjectTag>(
-        vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT"));
     submitMessage = reinterpret_cast<PFN_SubmitMessage>(
-        vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT")
-    );
+        vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT"));
 
     if (some_PFN_is_null()) {
         unload();
@@ -132,8 +127,7 @@ bool DebugUtilsEXT::load(VkInstance instance) noexcept
 }
 
 void DebugUtilsEXT::BeginLabel(
-    VkCommandBuffer commandBuffer, const Label *pLabelInfo
-)
+    VkCommandBuffer commandBuffer, const Label *pLabelInfo)
 {
     beginLabel(commandBuffer, pLabelInfo);
 }
@@ -144,8 +138,7 @@ void DebugUtilsEXT::EndLabel(VkCommandBuffer commandBuffer)
 }
 
 void DebugUtilsEXT::InsertLabel(
-    VkCommandBuffer commandBuffer, const Label *pLabelInfo
-)
+    VkCommandBuffer commandBuffer, const Label *pLabelInfo)
 {
     insertLabel(commandBuffer, pLabelInfo);
 }
@@ -154,8 +147,7 @@ VkResult DebugUtilsEXT::CreateMessenger(
     VkInstance instance,
     const MessengerCreateInfo *pCreateInfo,
     const VkAllocationCallbacks *pAllocator,
-    Messenger *pMessenger
-)
+    Messenger *pMessenger)
 {
     return createMessenger(instance, pCreateInfo, pAllocator, pMessenger);
 }
@@ -163,8 +155,7 @@ VkResult DebugUtilsEXT::CreateMessenger(
 void DebugUtilsEXT::DestroyMessenger(
     VkInstance instance,
     Messenger messenger,
-    const VkAllocationCallbacks *pAllocator
-)
+    const VkAllocationCallbacks *pAllocator)
 {
     destroyMessenger(instance, messenger, pAllocator);
 }
@@ -185,8 +176,7 @@ void DebugUtilsEXT::QueueEndLabel(VkQueue queue)
 }
 
 VkResult DebugUtilsEXT::SetObjectName(
-    VkDevice device, const ObjectNameInfo *pNameInfo
-)
+    VkDevice device, const ObjectNameInfo *pNameInfo)
 {
     return setObjectName(device, pNameInfo);
 }
@@ -201,10 +191,8 @@ void DebugUtilsEXT::SubmitMessage(
     VkInstance instance,
     MessageSeverityFlagBits messageSeverity,
     MessageTypeFlags messageTypes,
-    const MessengerCallbackData *pCallbackData
-)
+    const MessengerCallbackData *pCallbackData)
 {
     return submitMessage(
-        instance, messageSeverity, messageTypes, pCallbackData
-    );
+        instance, messageSeverity, messageTypes, pCallbackData);
 }

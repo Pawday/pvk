@@ -36,8 +36,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
         pvk::warning(std::format(
             "Failue loading library from: \"{}\" error code 0x{:X}",
             library_file,
-            last_error_code
-        ));
+            last_error_code));
         return std::nullopt;
     }
 

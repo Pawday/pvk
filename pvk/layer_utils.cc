@@ -16,8 +16,7 @@
 namespace pvk {
 
 void dump_extensions_per_layer(
-    const LayerExtMap &lay_exts, std::string_view label, Logger &l
-)
+    const LayerExtMap &lay_exts, std::string_view label, Logger &l)
 {
     if (lay_exts.size() == 0) {
         return;
@@ -53,8 +52,7 @@ std::unordered_set<std::string>
         std::string layer_name(layer.layerName);
         if (output.contains(layer_name)) {
             l.warning(
-                std::format("Layer {} mentioned more than once", layer_name)
-            );
+                std::format("Layer {} mentioned more than once", layer_name));
             continue;
         }
         output.emplace(layer_name);
@@ -64,8 +62,7 @@ std::unordered_set<std::string>
 };
 
 std::unordered_set<std::string> collect_extensions(
-    const std::vector<VkExtensionProperties> &extensions, Logger &l
-)
+    const std::vector<VkExtensionProperties> &extensions, Logger &l)
 {
     std::unordered_set<std::string> output;
     output.reserve(extensions.size());
@@ -73,8 +70,7 @@ std::unordered_set<std::string> collect_extensions(
         std::string ext_name(ext.extensionName);
         if (output.contains(ext_name)) {
             std::string dup_warn = std::format(
-                "Extention \"{}\" mentioned more than once", ext_name
-            );
+                "Extention \"{}\" mentioned more than once", ext_name);
             l.warning(dup_warn);
             continue;
         }
@@ -94,8 +90,7 @@ std::unordered_set<std::string> get_instance_layers(Logger &l)
     if (VK_SUCCESS != get_nb_layers_status) {
         l.warning(std::format(
             "Cannot retreave instance layer count ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)
-        ));
+            vk_to_str(get_nb_layers_status)));
         return {};
     }
 
@@ -106,8 +101,7 @@ std::unordered_set<std::string> get_instance_layers(Logger &l)
     if (VK_SUCCESS != get_layers_status) {
         l.warning(std::format(
             "Cannot retreave instance layers ({}): Assume no layers",
-            vk_to_str(get_layers_status)
-        ));
+            vk_to_str(get_layers_status)));
         return {};
     }
 
@@ -124,21 +118,18 @@ std::unordered_set<std::string>
     if (VK_SUCCESS != get_nb_layers_status) {
         l.warning(std::format(
             "Cannot retreave device layers count ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)
-        ));
+            vk_to_str(get_nb_layers_status)));
         return {};
     }
 
     std::vector<VkLayerProperties> available_layers(nb_layers);
     VkResult get_layers_status = vkEnumerateDeviceLayerProperties(
-        device, &nb_layers, available_layers.data()
-    );
+        device, &nb_layers, available_layers.data());
 
     if (VK_SUCCESS != get_layers_status) {
         l.warning(std::format(
             "Cannot retreave device layers ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)
-        ));
+            vk_to_str(get_nb_layers_status)));
         return {};
     }
 
@@ -150,30 +141,26 @@ std::unordered_set<std::string>
 {
     uint32_t nb_extensions = 0;
     VkResult get_nb_status = vkEnumerateInstanceExtensionProperties(
-        layer_name, &nb_extensions, nullptr
-    );
+        layer_name, &nb_extensions, nullptr);
 
     if (VK_SUCCESS != get_nb_status) {
         l.warning(std::format(
             "Cannot retreave instance layers extension count ({}): Assume no "
             "instance layers",
-            vk_to_str(get_nb_status)
-        ));
+            vk_to_str(get_nb_status)));
         return {};
     }
 
     std::vector<VkExtensionProperties> layer_exts(nb_extensions);
     VkResult get_layers_status = vkEnumerateInstanceExtensionProperties(
-        layer_name, &nb_extensions, layer_exts.data()
-    );
+        layer_name, &nb_extensions, layer_exts.data());
 
     if (VK_SUCCESS != get_layers_status) {
         l.warning(std::format(
             "Cannot retreave instance layer extensions ({}): Assume no "
             "instance "
             "layers",
-            vk_to_str(get_layers_status)
-        ));
+            vk_to_str(get_layers_status)));
         return {};
     }
 
@@ -181,8 +168,7 @@ std::unordered_set<std::string>
 }
 
 LayerExtMap get_instance_layers_extensions(
-    const std::unordered_set<std::string> &layer_names, Logger &l
-)
+    const std::unordered_set<std::string> &layer_names, Logger &l)
 {
     LayerExtMap output;
     for (const auto &layer_name : layer_names) {
@@ -211,34 +197,29 @@ LayerExtMap get_instance_layers_extensions(
 }
 
 std::unordered_set<std::string> get_device_layer_extensions(
-    const VkPhysicalDevice &device, const char *layer_name, Logger &l
-)
+    const VkPhysicalDevice &device, const char *layer_name, Logger &l)
 {
     uint32_t nb_extensions = 0;
     VkResult get_nb_status = vkEnumerateDeviceExtensionProperties(
-        device, layer_name, &nb_extensions, nullptr
-    );
+        device, layer_name, &nb_extensions, nullptr);
 
     if (VK_SUCCESS != get_nb_status) {
         l.warning(std::format(
             "Cannot retreave device layers extension count ({}): Assume no "
             "device layers",
-            vk_to_str(get_nb_status)
-        ));
+            vk_to_str(get_nb_status)));
         return {};
     }
 
     std::vector<VkExtensionProperties> layer_exts(nb_extensions);
     VkResult get_layers_status = vkEnumerateDeviceExtensionProperties(
-        device, layer_name, &nb_extensions, layer_exts.data()
-    );
+        device, layer_name, &nb_extensions, layer_exts.data());
 
     if (VK_SUCCESS != get_layers_status) {
         l.warning(std::format(
             "Cannot retreave device layer extensions ({}): Assume no "
             "device layers",
-            vk_to_str(get_layers_status)
-        ));
+            vk_to_str(get_layers_status)));
         return {};
     }
 
@@ -248,8 +229,7 @@ std::unordered_set<std::string> get_device_layer_extensions(
 LayerExtMap get_device_layers_extensions(
     const VkPhysicalDevice &device,
     const std::unordered_set<std::string> &layer_names,
-    Logger &l
-)
+    Logger &l)
 {
     LayerExtMap output;
     for (const auto &layer_name : layer_names) {

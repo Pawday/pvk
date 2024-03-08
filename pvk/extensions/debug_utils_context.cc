@@ -1,7 +1,6 @@
 #include <format>
 #include <memory>
 
-
 #include <pvk/extensions/debug_utils.hh>
 #include <pvk/extensions/debug_utils_context.hh>
 
@@ -18,8 +17,7 @@ static VkBool32 callback(
     DebugUtilsEXT::MessageSeverityFlagBits messageSeverity,
     DebugUtilsEXT::MessageTypeFlags messageTypes,
     const DebugUtilsEXT::MessengerCallbackData *pCallbackData,
-    void *pUserData
-)
+    void *pUserData)
 {
     (void)messageTypes;
     DebugUtilsContext *ctx = reinterpret_cast<DebugUtilsContext *>(pUserData);
@@ -42,9 +40,8 @@ static VkBool32 callback(
     return VK_FALSE;
 }
 
-std::unique_ptr<DebugUtilsContext>
-    DebugUtilsContext::create(std::shared_ptr<pvk::Allocator> allocator
-    ) noexcept
+std::unique_ptr<DebugUtilsContext> DebugUtilsContext::create(
+    std::shared_ptr<pvk::Allocator> allocator) noexcept
 {
     std::unique_ptr<DebugUtilsContext> output =
         std::unique_ptr<DebugUtilsContext>(new DebugUtilsContext());
@@ -120,8 +117,7 @@ DebugUtilsContext::Messenger::~Messenger() noexcept
 }
 
 bool DebugUtilsContext::create_messenger(
-    VkInstance instance, const VkAllocationCallbacks *callbacks
-) noexcept
+    VkInstance instance, const VkAllocationCallbacks *callbacks) noexcept
 {
     if (m_debug_messenger.val() != VK_NULL_HANDLE) {
         return false;
@@ -137,12 +133,10 @@ bool DebugUtilsContext::create_messenger(
 
     DebugUtilsEXT::Messenger new_messenger = VK_NULL_HANDLE;
     auto create_status = DebugUtilsEXT::CreateMessenger(
-        instance, &m_info, m_allocator->get_callbacks(), &new_messenger
-    );
+        instance, &m_info, m_allocator->get_callbacks(), &new_messenger);
     if (create_status != VK_SUCCESS) {
-        pvk::warning(
-            std::format("Messager create failue - {}", vk_to_str(create_status))
-        );
+        pvk::warning(std::format(
+            "Messager create failue - {}", vk_to_str(create_status)));
         return false;
     }
 

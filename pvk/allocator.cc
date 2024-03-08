@@ -41,8 +41,7 @@ static void
         "bytes by alignment {}, allocating {} bytes instead\n",
         size,
         alignment,
-        aligned_size
-    ));
+        aligned_size));
 }
 #endif
 
@@ -56,8 +55,7 @@ struct Allocator::ImplFriend
         void *allocator_p,
         size_t size,
         size_t alignment,
-        VkSystemAllocationScope allocationScope
-    )
+        VkSystemAllocationScope allocationScope)
     {
         Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
 
@@ -106,8 +104,7 @@ struct Allocator::ImplFriend
         if (orig_block_it == std::end(allocator->m_blocks)) {
             pvk::warning(std::format(
                 "VkAllocator: request freeing of nonallocated addres 0x{:x}\n",
-                addr_to_free
-            ));
+                addr_to_free));
             return;
         }
 
@@ -120,14 +117,12 @@ struct Allocator::ImplFriend
         void *original_p,
         size_t size,
         size_t alignment,
-        VkSystemAllocationScope allocationScope
-    )
+        VkSystemAllocationScope allocationScope)
     {
         Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         if (original_p == nullptr) {
             return vkAllocationFunction(
-                allocator_p, size, alignment, allocationScope
-            );
+                allocator_p, size, alignment, allocationScope);
         }
 
         size_t original_addr = reinterpret_cast<size_t>(original_p);
@@ -135,8 +130,7 @@ struct Allocator::ImplFriend
         if (orig_block_it == std::end(allocator->m_blocks)) {
             pvk::warning(std::format(
                 "VkAllocator: reallocating of nonallocated addres 0x{:x}\n",
-                original_addr
-            ));
+                original_addr));
             return nullptr;
         }
 
@@ -155,8 +149,7 @@ struct Allocator::ImplFriend
         void *allocator_p,
         size_t size,
         VkInternalAllocationType allocationType,
-        VkSystemAllocationScope allocationScope
-    )
+        VkSystemAllocationScope allocationScope)
     {
         Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         (void)allocator;
@@ -170,8 +163,7 @@ struct Allocator::ImplFriend
         void *allocator_p,
         size_t size,
         VkInternalAllocationType allocationType,
-        VkSystemAllocationScope allocationScope
-    )
+        VkSystemAllocationScope allocationScope)
     {
         Allocator *allocator = reinterpret_cast<Allocator *>(allocator_p);
         (void)allocator;

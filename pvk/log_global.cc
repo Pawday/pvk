@@ -25,8 +25,7 @@ void log_lines_to(
     std::ostream &stream,
     const std::string prefix,
     const std::string &message,
-    const std::vector<Segment> &segments
-)
+    const std::vector<Segment> &segments)
 {
     for (auto segment : segments) {
         std::string_view line(message.data() + segment.start, segment.size);
@@ -76,8 +75,7 @@ try {
         std::cerr,
         std::format("{}{} ", "[pvk] [TRACE] ", source),
         message,
-        lines
-    );
+        lines);
     std::cerr << ansi_reset();
 } catch (...) {
 }

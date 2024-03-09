@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <format>
 #include <memory>
 #include <optional>
@@ -7,11 +6,9 @@
 #include <string_view>
 #include <unordered_set>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include <cstddef>
-#include <cstdint>
 
 #include <pvk/device_context.hh>
 #include <pvk/instance_context.hh>
@@ -19,6 +16,7 @@
 #include <pvk/physical_device.hh>
 #include <pvk/vk_allocator.hh>
 
+#include "pvk/device_context_impl.hh"
 #include "pvk/layer_utils.hh"
 #include "pvk/phy_device_conv.hh"
 #include "pvk/result.hh"
@@ -27,182 +25,18 @@
 
 namespace pvk {
 
-struct alignas(DeviceContext) DeviceContext::Impl
+std::optional<DeviceContext>
+    DeviceContext::Impl::create(PhysicalDevice &phy_dev) noexcept
 {
-    static std::optional<DeviceContext> create(PhysicalDevice &phy_dev) noexcept
-    {
-        auto native = as_native(phy_dev);
-        if (native == VK_NULL_HANDLE) {
-            return std::nullopt;
-        }
-
-        Impl impl_out(std::move(native));
-        DeviceContext out(std::move(impl_out));
-        return out;
+    auto native = as_native(phy_dev);
+    if (native == VK_NULL_HANDLE) {
+        return std::nullopt;
     }
 
-    bool connect();
-
-    void disconnect()
-    {
-        if (m_device == VK_NULL_HANDLE) {
-            l.warning("No connection: Ignore disconnect request");
-            return;
-        }
-
-        if (m_alloc != nullptr) {
-            vkDestroyDevice(m_device, m_alloc->get_callbacks());
-        } else {
-            vkDestroyDevice(m_device, nullptr);
-        }
-        m_device = VK_NULL_HANDLE;
-    }
-
-    ~Impl()
-    {
-        if (m_phy_device == VK_NULL_HANDLE) {
-            return;
-        }
-
-        if (m_device == VK_NULL_HANDLE) {
-            return;
-        }
-
-        disconnect();
-    }
-
-    Impl(Impl &&o) noexcept
-        : l(std::move(o.l)), m_alloc(std::move(o.m_alloc)),
-          m_device_meta(std::move(o.m_device_meta)),
-          m_phy_device(o.m_phy_device), m_device(o.m_device)
-    {
-        if (this == &o) {
-            return;
-        }
-        o.m_phy_device = VK_NULL_HANDLE;
-        o.m_device = VK_NULL_HANDLE;
-    }
-
-    Impl(const Impl &) = delete;
-    Impl &operator=(const Impl &) = delete;
-
-    static Impl &cast_from(std::byte *data)
-    {
-        return *reinterpret_cast<Impl *>(data);
-    }
-
-    static Impl const &cast_from(std::byte const *data)
-    {
-        return *reinterpret_cast<Impl const *>(data);
-    }
-
-    static bool assert_size()
-    {
-        static_assert(sizeof(Impl) < DeviceContext::impl_size);
-        return true;
-    }
-
-    void load_device_props()
-    {
-        if (std::holds_alternative<VkPhysicalDeviceProperties>(m_device_meta)) {
-            return;
-        }
-        VkPhysicalDeviceProperties new_props{};
-        vkGetPhysicalDeviceProperties(m_phy_device, &new_props);
-        m_device_meta = new_props;
-    }
-
-    void load_device_features()
-    {
-        if (std::holds_alternative<VkPhysicalDeviceFeatures>(m_device_meta)) {
-            return;
-        }
-        VkPhysicalDeviceFeatures new_features{};
-        vkGetPhysicalDeviceFeatures(m_phy_device, &new_features);
-        m_device_meta = new_features;
-    }
-
-    void load_queue_families()
-    {
-        if (std::holds_alternative<std::vector<VkQueueFamilyProperties>>(
-                m_device_meta)) {
-            return;
-        }
-
-        uint32_t nb_queues = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(
-            m_phy_device, &nb_queues, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queues_props(nb_queues);
-        vkGetPhysicalDeviceQueueFamilyProperties(
-            m_phy_device, &nb_queues, queues_props.data());
-
-        m_device_meta = queues_props;
-    }
-
-    std::string get_name()
-    {
-        load_device_props();
-        return std::get<VkPhysicalDeviceProperties>(m_device_meta).deviceName;
-    }
-
-    DeviceType get_device_type()
-    {
-        load_device_props();
-        auto vk_device_type =
-            std::get<VkPhysicalDeviceProperties>(m_device_meta).deviceType;
-
-        std::string gpu_type;
-
-        switch (vk_device_type) {
-        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-            gpu_type = "Integrated";
-            break;
-        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-            gpu_type = "Discrete";
-            break;
-        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            gpu_type = "Virtual";
-            break;
-        default:
-            break;
-        }
-
-        switch (vk_device_type) {
-        case VK_PHYSICAL_DEVICE_TYPE_OTHER:
-        case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
-            return DeviceType::UNKNOWN;
-        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            l.debug(std::format("Vk GPU type: {}", gpu_type));
-            return DeviceType::GPU;
-        case VK_PHYSICAL_DEVICE_TYPE_CPU:
-            return DeviceType::CPU;
-        }
-    }
-
-  private:
-    Impl(VkPhysicalDevice &&device) : m_phy_device(std::move(device))
-    {
-        l.set_name(std::format(
-            "DeviceContext 0x{:x}", reinterpret_cast<size_t>(m_phy_device)));
-        m_alloc = std::make_unique<Allocator>();
-    }
-
-    Logger l;
-    std::unique_ptr<Allocator> m_alloc = nullptr;
-
-    std::variant<
-        std::monostate,
-        VkPhysicalDeviceProperties,
-        VkPhysicalDeviceFeatures,
-        std::vector<VkQueueFamilyProperties>>
-        m_device_meta;
-
-    VkPhysicalDevice m_phy_device = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-};
+    Impl impl_out(std::move(native));
+    DeviceContext out(std::move(impl_out));
+    return out;
+}
 
 bool DeviceContext::Impl::connect()
 {
@@ -309,6 +143,65 @@ bool DeviceContext::Impl::connect()
     return true;
 }
 
+void DeviceContext::Impl::disconnect()
+{
+    if (m_device == VK_NULL_HANDLE) {
+        l.warning("No connection: Ignore disconnect request");
+        return;
+    }
+
+    if (m_alloc != nullptr) {
+        vkDestroyDevice(m_device, m_alloc->get_callbacks());
+    } else {
+        vkDestroyDevice(m_device, nullptr);
+    }
+    m_device = VK_NULL_HANDLE;
+}
+
+DeviceType DeviceContext::Impl::get_device_type()
+{
+    load_device_props();
+    auto vk_device_type =
+        std::get<VkPhysicalDeviceProperties>(m_device_meta).deviceType;
+
+    std::string gpu_type;
+
+    switch (vk_device_type) {
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        gpu_type = "Integrated";
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+        gpu_type = "Discrete";
+        break;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+        gpu_type = "Virtual";
+        break;
+    default:
+        break;
+    }
+
+    switch (vk_device_type) {
+    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+    case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
+        return DeviceType::UNKNOWN;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+        l.debug(std::format("Vk GPU type: {}", gpu_type));
+        return DeviceType::GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+        return DeviceType::CPU;
+    }
+}
+
+DeviceContext::Impl::Impl(VkPhysicalDevice &&device) noexcept
+    : m_phy_device(std::move(device))
+{
+    l.set_name(std::format(
+        "DeviceContext 0x{:x}", reinterpret_cast<size_t>(m_phy_device)));
+    m_alloc = std::make_unique<Allocator>();
+}
+
 std::optional<DeviceContext>
     DeviceContext::create(PhysicalDevice &device) noexcept
 {
@@ -350,6 +243,11 @@ DeviceType DeviceContext::get_device_type()
 bool DeviceContext::connect()
 {
     return Impl::cast_from(impl).connect();
+}
+
+bool DeviceContext::connected() const
+{
+    return Impl::cast_from(impl).connected();
 }
 
 } // namespace pvk

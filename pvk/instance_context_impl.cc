@@ -68,17 +68,8 @@ struct alignas(InstanceContext) InstanceContext::Impl
 
     static bool check_impl_sizes()
     {
-        static_assert(sizeof(PhysicalDevice) >= sizeof(VkPhysicalDevice));
-
-        if (sizeof(VkPhysicalDevice) > sizeof(PhysicalDevice)) {
-            return false;
-        }
-
         static_assert(
-            InstanceContext::impl_size >= sizeof(InstanceContext::Impl));
-        if (InstanceContext::impl_size < sizeof(InstanceContext::Impl)) {
-            return false;
-        }
+            sizeof(InstanceContext::Impl) < InstanceContext::impl_size);
 
         return true;
     }

@@ -72,6 +72,7 @@ target_sources(pvk_objects PRIVATE
     log_global.cc
     logger.cc
     layer_utils.cc
+    pipeline.cc
 )
 
 if(WIN32)

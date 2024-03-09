@@ -31,6 +31,7 @@ struct PVK_API alignas(std::max_align_t) DeviceContext
     DeviceType get_device_type();
 
     bool connect();
+    bool connected() const;
 
     DeviceContext(DeviceContext const &) = delete;
     DeviceContext &operator=(DeviceContext const &) = delete;

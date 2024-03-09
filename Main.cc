@@ -101,6 +101,10 @@ Application::Application()
         }
         this->devices.emplace_back(std::move(*device_context));
     }
+
+    for (auto &device : devices) {
+        device.connect();
+    }
 }
 
 int main(int argc, char **argv)

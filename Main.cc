@@ -8,9 +8,10 @@
 #include <utility>
 #include <vector>
 
+#include <pvk/device_context.hh>
+#include <pvk/instance_context.hh>
+
 #include "pvk/physical_device.hh"
-#include "pvk/vk_device_ctx.hh"
-#include "pvk/vk_instance_ctx.hh"
 #include "pvk/vk_loader.hh"
 
 using namespace pvk;

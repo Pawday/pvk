@@ -12,12 +12,12 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <pvk/instance_context.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
 #include <pvk/physical_device.hh>
 #include <pvk/vk_allocator.hh>
 #include <pvk/vk_api.hh>
-#include <pvk/vk_instance_ctx.hh>
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 #include <pvk/extensions/debug_utils.hh>

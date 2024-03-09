@@ -5,8 +5,8 @@
 
 #include <cstddef>
 
+#include <pvk/instance_context.hh>
 #include <pvk/physical_device.hh>
-#include <pvk/vk_instance_ctx.hh>
 
 #include <pvk/symvis.hh>
 

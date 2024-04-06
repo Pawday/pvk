@@ -6,9 +6,11 @@
 
 #include "pvk/log_utils.hh"
 
+#define ANSI_BOX
+
 namespace {
 
-#if 1
+#if defined(ANSI_BOX)
 constexpr char lt[] = "┌";
 constexpr char rt[] = "┐";
 constexpr char lb[] = "└";

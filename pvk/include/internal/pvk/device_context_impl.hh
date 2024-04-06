@@ -11,8 +11,8 @@
 #include <cstdint>
 
 #include <pvk/device_context.hh>
+#include <pvk/instance_context.hh>
 #include <pvk/logger.hh>
-#include <pvk/physical_device.hh>
 
 #include "pvk/vk_allocator.hh"
 #include "pvk/vk_api.hh"
@@ -21,9 +21,6 @@ namespace pvk {
 
 struct alignas(DeviceContext) DeviceContext::Impl
 {
-    static std::optional<DeviceContext>
-        create(PhysicalDevice &phy_dev) noexcept;
-
     bool connect();
     bool connected() const
     {
@@ -60,19 +57,18 @@ struct alignas(DeviceContext) DeviceContext::Impl
     Impl(const Impl &) = delete;
     Impl &operator=(const Impl &) = delete;
 
-    static Impl &cast_from(std::byte *data)
+    static Impl &cast_from(DeviceContext &ctx)
     {
-        return *reinterpret_cast<Impl *>(data);
+        return *reinterpret_cast<Impl *>(ctx.impl);
     }
 
-    static Impl const &cast_from(std::byte const *data)
+    static Impl const &cast_from(DeviceContext const &ctx)
     {
-        return *reinterpret_cast<Impl const *>(data);
+        return *reinterpret_cast<Impl const *>(ctx.impl);
     }
 
     static bool assert_size()
     {
-        static_assert(sizeof(VkPhysicalDevice) < sizeof(PhysicalDevice));
         static_assert(sizeof(Impl) < DeviceContext::impl_size);
         return true;
     }
@@ -123,9 +119,9 @@ struct alignas(DeviceContext) DeviceContext::Impl
 
     DeviceType get_device_type();
 
-  private:
     Impl(VkPhysicalDevice &&device) noexcept;
 
+  private:
     Logger l;
     std::unique_ptr<Allocator> m_alloc = nullptr;
 

@@ -11,8 +11,7 @@
 #include <pvk/device_context.hh>
 #include <pvk/instance_context.hh>
 
-#include "pvk/physical_device.hh"
-#include "pvk/vk_loader.hh"
+#include <pvk/vk_loader.hh>
 
 using namespace pvk;
 
@@ -93,17 +92,19 @@ Application::Application()
         return;
     }
 
-    std::vector<PhysicalDevice> dev_handles = m_vk_context->get_devices();
-    for (PhysicalDevice &device : dev_handles) {
-        auto device_context = DeviceContext::create(device);
-        if (!device_context) {
-            continue;
-        }
-        this->devices.emplace_back(std::move(*device_context));
-    }
+    size_t devices_count = m_vk_context->get_device_count();
 
-    for (auto &device : devices) {
-        device.connect();
+    std::cout << std::format("Found {} devices\n", devices_count);
+
+    for (size_t device_idx = 0; device_idx < devices_count; device_idx++) {
+        std::optional<DeviceContext> device_ctx =
+            m_vk_context->get_device(device_idx);
+
+        std::cout << std::format(
+            "Device #{} - {} ({})\n",
+            device_idx,
+            device_ctx->get_name(),
+            device_type_to_str(device_ctx->get_device_type()));
     }
 }
 

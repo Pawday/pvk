@@ -1,12 +1,11 @@
 #pragma once
 
 #include <optional>
-#include <vector>
 
 #include <cstddef>
 
+#include <pvk/device_context.hh>
 #include <pvk/symvis.hh>
-#include <pvk/physical_device.hh>
 
 namespace pvk {
 
@@ -20,7 +19,8 @@ struct PVK_API alignas(std::max_align_t) InstanceContext
     InstanceContext(const InstanceContext &) = delete;
     InstanceContext &operator=(const InstanceContext &) = delete;
 
-    std::vector<PhysicalDevice> get_devices() const;
+    size_t get_device_count() const noexcept;
+    std::optional<DeviceContext> get_device(size_t device_idx) const noexcept;
 
   private:
     static constexpr size_t impl_size = 128;

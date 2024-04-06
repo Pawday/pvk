@@ -12,10 +12,10 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <pvk/device_context.hh>
 #include <pvk/instance_context.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
-#include <pvk/physical_device.hh>
 #include <pvk/vk_allocator.hh>
 #include <pvk/vk_api.hh>
 
@@ -24,58 +24,13 @@
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
+#include "pvk/device_context_impl.hh"
+#include "pvk/instance_context_impl.hh"
 #include "pvk/layer_utils.hh"
-#include "pvk/phy_device_conv.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 
 namespace pvk {
-struct alignas(InstanceContext) InstanceContext::Impl
-{
-    static std::optional<InstanceContext> create();
-    std::vector<VkPhysicalDevice> get_devices() const;
-
-    Impl(Impl &&other) noexcept;
-    Impl &operator=(Impl &&other) = delete;
-    Impl(const Impl &) = delete;
-    Impl &operator=(const Impl &) = delete;
-
-    ~Impl() noexcept;
-
-    static Impl &cast_from(std::byte *data)
-    {
-        return *reinterpret_cast<Impl *>(data);
-    }
-
-    static Impl const &cast_from(std::byte const *data)
-    {
-        return *reinterpret_cast<Impl const *>(data);
-    }
-
-  private:
-    std::shared_ptr<Allocator> m_allocator = nullptr;
-    VkInstance m_vk_instance = VK_NULL_HANDLE;
-    Logger l;
-
-#if (PVK_USE_EXT_DEBUG_UTILS)
-    static void debug_utils_log_cb(
-        void *user_data,
-        Logger::Level level,
-        const std::string &message) noexcept;
-    std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
-    std::unique_ptr<DebugUtilsContext> debugger = nullptr;
-#endif
-
-    static bool check_impl_sizes()
-    {
-        static_assert(
-            sizeof(InstanceContext::Impl) < InstanceContext::impl_size);
-
-        return true;
-    }
-
-    Impl() = default;
-};
 
 InstanceContext::InstanceContext(InstanceContext::Impl &&impl) noexcept
 {
@@ -90,7 +45,7 @@ InstanceContext &InstanceContext::operator=(InstanceContext &&other) noexcept
 
 InstanceContext::~InstanceContext() noexcept
 {
-    Impl::cast_from(impl).~Impl();
+    Impl::cast_from(*this).~Impl();
 }
 
 InstanceContext::Impl::~Impl() noexcept
@@ -276,24 +231,15 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
     }
 #endif
 
+    if (!impl.load_devices()) {
+        l.warning("Loading physical device list failue");
+        return std::nullopt;
+    }
+
     return InstanceContext(std::move(impl));
 }
 
-std::vector<PhysicalDevice> InstanceContext::get_devices() const
-{
-    std::vector<PhysicalDevice> output;
-
-    auto devices = Impl::cast_from(this->impl).get_devices();
-    output.reserve(devices.size());
-
-    for (auto &device : devices) {
-        output.emplace_back(from_native(device));
-    }
-
-    return output;
-}
-
-std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
+bool InstanceContext::Impl::load_devices()
 {
     uint32_t cnt_devices = 0;
     VkResult dev_enum_status =
@@ -302,10 +248,10 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
         l.warning(std::format(
             "Counting vulkan physical devices failue: \"{}\"",
             vk_to_str(dev_enum_status)));
-        return {};
+        return false;
     }
     if (cnt_devices == 0) {
-        return {};
+        return false;
     }
 
     std::vector<VkPhysicalDevice> devices;
@@ -319,7 +265,9 @@ std::vector<VkPhysicalDevice> InstanceContext::Impl::get_devices() const
             vk_to_str(dev_enum_status)));
         return {};
     }
-    return devices;
+
+    m_devices = devices;
+    return true;
 }
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
@@ -350,13 +298,14 @@ void InstanceContext::Impl::debug_utils_log_cb(
 
 InstanceContext::InstanceContext(InstanceContext &&other) noexcept
 {
-    auto &other_impl = InstanceContext::Impl::cast_from(other.impl);
+    auto &other_impl = InstanceContext::Impl::cast_from(other);
     new (impl) InstanceContext::Impl(std::move(other_impl));
 }
 
 InstanceContext::Impl::Impl(InstanceContext::Impl &&other) noexcept
     : m_allocator(std::move(other.m_allocator)),
-      m_vk_instance(std::move(other.m_vk_instance)), l(std::move(other.l))
+      m_vk_instance(std::move(other.m_vk_instance)), l(std::move(other.l)),
+      m_devices(std::move(other.m_devices))
 #if (PVK_USE_EXT_DEBUG_UTILS)
       ,
       instance_spy(std::move(other.instance_spy)),
@@ -368,6 +317,35 @@ InstanceContext::Impl::Impl(InstanceContext::Impl &&other) noexcept
     debugger->get_logger().set_userdata(this);
 #endif
     other.m_vk_instance = VK_NULL_HANDLE;
+}
+
+size_t InstanceContext::get_device_count() const noexcept
+{
+    return Impl::cast_from(*this).get_device_count();
+}
+size_t InstanceContext::Impl::get_device_count() const noexcept
+{
+    return this->m_devices.size();
+}
+
+std::optional<DeviceContext>
+    InstanceContext::get_device(size_t device_idx) const noexcept
+{
+    return Impl::cast_from(*this).get_device(device_idx);
+}
+
+std::optional<DeviceContext>
+    InstanceContext::Impl::get_device(size_t device_idx) const noexcept
+{
+    if (device_idx >= m_devices.size()) {
+        return std::nullopt;
+    }
+
+    VkPhysicalDevice physical_device = m_devices[device_idx];
+
+    DeviceContext::Impl i(std::move(physical_device));
+
+    return DeviceContext(std::move(i));
 }
 
 } // namespace pvk

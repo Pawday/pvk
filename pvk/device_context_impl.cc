@@ -13,30 +13,15 @@
 #include <pvk/device_context.hh>
 #include <pvk/instance_context.hh>
 #include <pvk/logger.hh>
-#include <pvk/physical_device.hh>
 #include <pvk/vk_allocator.hh>
 
 #include "pvk/device_context_impl.hh"
 #include "pvk/layer_utils.hh"
-#include "pvk/phy_device_conv.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 #include "pvk/vk_api.hh"
 
 namespace pvk {
-
-std::optional<DeviceContext>
-    DeviceContext::Impl::create(PhysicalDevice &phy_dev) noexcept
-{
-    auto native = as_native(phy_dev);
-    if (native == VK_NULL_HANDLE) {
-        return std::nullopt;
-    }
-
-    Impl impl_out(std::move(native));
-    DeviceContext out(std::move(impl_out));
-    return out;
-}
 
 bool DeviceContext::Impl::connect()
 {
@@ -202,12 +187,6 @@ DeviceContext::Impl::Impl(VkPhysicalDevice &&device) noexcept
     m_alloc = std::make_unique<Allocator>();
 }
 
-std::optional<DeviceContext>
-    DeviceContext::create(PhysicalDevice &device) noexcept
-{
-    return Impl::create(device);
-}
-
 DeviceContext::DeviceContext(Impl &&o) noexcept
 {
     new (impl) Impl(std::move(o));
@@ -215,8 +194,7 @@ DeviceContext::DeviceContext(Impl &&o) noexcept
 
 DeviceContext::DeviceContext(DeviceContext &&o) noexcept
 {
-    Impl &other_impl = Impl::cast_from(o.impl);
-    new (impl) Impl(std::move(other_impl));
+    new (impl) Impl(std::move(Impl::cast_from(o)));
 }
 
 DeviceContext &DeviceContext::operator=(DeviceContext &&o) noexcept
@@ -227,27 +205,27 @@ DeviceContext &DeviceContext::operator=(DeviceContext &&o) noexcept
 
 DeviceContext::~DeviceContext() noexcept
 {
-    Impl::cast_from(impl).~Impl();
+    Impl::cast_from(*this).~Impl();
 }
 
 std::string DeviceContext::get_name()
 {
-    return Impl::cast_from(impl).get_name();
+    return Impl::cast_from(*this).get_name();
 }
 
 DeviceType DeviceContext::get_device_type()
 {
-    return Impl::cast_from(impl).get_device_type();
+    return Impl::cast_from(*this).get_device_type();
 }
 
 bool DeviceContext::connect()
 {
-    return Impl::cast_from(impl).connect();
+    return Impl::cast_from(*this).connect();
 }
 
 bool DeviceContext::connected() const
 {
-    return Impl::cast_from(impl).connected();
+    return Impl::cast_from(*this).connected();
 }
 
 } // namespace pvk

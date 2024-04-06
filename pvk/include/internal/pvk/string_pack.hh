@@ -52,7 +52,7 @@ struct StringPack
         StringPack output;
         output.data = std::move(data);
         output.offsets = std::move(offsets);
-        return output;
+        return std::make_optional(output);
 
     } catch (...) {
         return std::nullopt;

@@ -4,7 +4,6 @@ ColumnLimit: 80
 BinPackArguments: false
 DerivePointerAlignment: false
 PointerAlignment: Right
-AlignAfterOpenBracket: BlockIndent
 AllowShortFunctionsOnASingleLine: false
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -18,6 +17,5 @@ BinPackParameters: false
 BreakBeforeBinaryOperators: None
 BreakBeforeConceptDeclarations: Always
 IndentWrappedFunctionNames: true
-BinPackParameters: false
 AllowAllParametersOfDeclarationOnNextLine: true
 AlignAfterOpenBracket: AlwaysBreak

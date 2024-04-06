@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstddef>
 #include <format>
 #include <string>
 #include <string_view>
@@ -21,25 +23,44 @@ void dump_extensions_per_layer(
     if (lay_exts.size() == 0) {
         return;
     }
-    l.info(std::format("+{:=^50}+", std::format(" {} ", label)));
+
+    size_t max_line_size = label.size() + 2;
+    std::vector<std::string> lines;
+    lines.reserve(lay_exts.size());
+
     bool first = true;
     for (auto &layer : lay_exts) {
+
         if (first) {
             first = false;
         } else {
-            l.info(std::format("| {: <49}|", ""));
+            lines.emplace_back();
         }
 
-        l.info(std::format("| {: <49}|", layer.first));
+        lines.emplace_back(std::string(layer.first));
 
         for (auto &extension : layer.second) {
-            l.info(std::format("|   {: <47}|", std::string(extension)));
+            lines.emplace_back(std::format(" {}", std::string(extension)));
         }
         if (layer.second.size() == 0) {
-            l.info(std::format("|   {: <47}|", "(No extensions)"));
+            lines.emplace_back(std::format(" {}", "(No extensions)"));
         }
     }
-    l.info(std::format("+{:=^50}+", ""));
+
+    auto max_line =
+        std::ranges::max_element(lines, [](const auto &l, const auto &r) {
+            return l.size() < r.size();
+        });
+    if (max_line != std::end(lines)) {
+        max_line_size = max_line->size();
+    }
+
+    l.info(
+        std::format("┌─{:─^{}}─┐", std::format(" {} ", label), max_line_size));
+    for (auto &line : lines) {
+        l.info(std::format("│ {: <{}} │", line, max_line_size));
+    }
+    l.info(std::format("└─{:─^{}}─┘", "", max_line_size));
 }
 
 namespace {

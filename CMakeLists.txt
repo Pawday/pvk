@@ -11,10 +11,10 @@ add_subdirectory(glad)
 add_subdirectory(pvk)
 
 set(SOME_PVK_TARGET_EXIST FALSE)
-if(TARGET pvk_static)
+if(TARGET pvk.static)
     set(SOME_PVK_TARGET_EXIST TRUE)
 endif()
-if(TARGET pvk_shared)
+if(TARGET pvk.shared)
     set(SOME_PVK_TARGET_EXIST TRUE)
 endif()
 
@@ -23,33 +23,33 @@ if(NOT ${SOME_PVK_TARGET_EXIST})
 endif()
 
 
-if (WIN32 AND NOT TARGET pvk_static)
-    message(FATAL_ERROR "Linking Main with pvk_shared is not supported on Windows")
+if (WIN32 AND NOT TARGET pvk.static)
+    message(FATAL_ERROR "Linking Main with pvk.shared is not supported on Windows")
 endif()
 
-add_library(Main_objects OBJECT)
-target_cxx_std(Main_objects 20)
-target_strict_compilation(Main_objects)
-target_link_libraries(Main_objects PRIVATE pvk_headers)
-target_link_libraries(Main_objects PRIVATE pvk_symvis_emptymacro)
+add_library(Main.objects OBJECT)
+target_cxx_std(Main.objects 20)
+target_strict_compilation(Main.objects)
+target_link_libraries(Main.objects PRIVATE pvk.headers)
+target_link_libraries(Main.objects PRIVATE pvk.symvis.emptymacro)
 
-target_sources(Main_objects PRIVATE
+target_sources(Main.objects PRIVATE
     Main.cc
 )
 
 add_executable(Main)
 target_sources(Main PRIVATE
-    $<TARGET_OBJECTS:Main_objects>
+    $<TARGET_OBJECTS:Main.objects>
 )
 
 if (WIN32)
-    target_compile_options(Main_objects PRIVATE USE_WINDOWS_VULKAN)
-    target_link_libraries(Main PRIVATE pvk_static)
+    target_compile_options(Main.objects PRIVATE USE_WINDOWS_VULKAN)
+    target_link_libraries(Main PRIVATE pvk.static)
     return()
 endif()
 
-if(TARGET pvk_shared)
-    target_link_libraries(Main PRIVATE pvk_shared)
+if(TARGET pvk.shared)
+    target_link_libraries(Main PRIVATE pvk.shared)
 else()
-    target_link_libraries(Main PRIVATE pvk_static)
+    target_link_libraries(Main PRIVATE pvk.static)
 endif()

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <pvk/instance_context.hh>
@@ -24,7 +25,7 @@ struct alignas(InstanceContext) InstanceContext::Impl
 
     static void assert_size_for_move()
     {
-        static_assert(sizeof(InstanceContext::Impl) == 112);
+        static_assert(sizeof(InstanceContext::Impl) <= impl_size);
     }
     Impl(Impl &&other) noexcept;
     Impl &operator=(Impl &&other) = delete;
@@ -58,7 +59,7 @@ struct alignas(InstanceContext) InstanceContext::Impl
     static void debug_utils_log_cb(
         void *user_data,
         Logger::Level level,
-        const std::string &message) noexcept;
+        const std::string_view &message) noexcept;
     std::unique_ptr<DebugUtilsContext> instance_spy = nullptr;
     std::unique_ptr<DebugUtilsContext> debugger = nullptr;
 #endif

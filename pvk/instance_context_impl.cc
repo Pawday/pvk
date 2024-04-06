@@ -32,9 +32,9 @@
 
 namespace pvk {
 
-InstanceContext::InstanceContext(InstanceContext::Impl &&impl) noexcept
+InstanceContext::InstanceContext(InstanceContext::Impl &&impl_obj) noexcept
 {
-    new (this->impl) InstanceContext::Impl(std::move(impl));
+    new (this->impl) InstanceContext::Impl(std::move(impl_obj));
 }
 
 InstanceContext &InstanceContext::operator=(InstanceContext &&other) noexcept
@@ -106,13 +106,31 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
     }
 #endif
-
     if (full_extesions_list.size() != 0) {
-        l.info(std::format("+{:=^50}+", " All instance extensions "));
+
+        std::string label = "All instance extensions";
+        size_t max_line_size = label.size() + 2;
+        std::vector<std::string> lines;
+        lines.reserve(full_extesions_list.size());
+
         for (auto &ext : full_extesions_list) {
-            l.info(std::format("| {: <49}|", ext));
+            lines.emplace_back(ext);
         }
-        l.info(std::format("+{:=^50}+", ""));
+
+        auto max_line =
+            std::ranges::max_element(lines, [](const auto &l, const auto &r) {
+                return l.size() < r.size();
+            });
+        if (max_line != std::end(lines)) {
+            max_line_size = max_line->size();
+        }
+
+        l.info(std::format(
+            "┌─{:─^{}}─┐", std::format(" {} ", label), max_line_size));
+        for (auto &line : lines) {
+            l.info(std::format("│ {:<{}} │", line, max_line_size));
+        }
+        l.info(std::format("└─{:─^{}}─┘", "", max_line_size));
     }
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
@@ -189,7 +207,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         &vk_instance_info, impl.m_allocator->get_callbacks(), &new_instance);
 
     if (instance_create_status != VK_SUCCESS) {
-        l.error(std::format(
+        l.warning(std::format(
             "Creating vulkan context failue: \"{}\"",
             vk_to_str(instance_create_status)));
         return std::nullopt;
@@ -272,10 +290,13 @@ bool InstanceContext::Impl::load_devices()
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 void InstanceContext::Impl::debug_utils_log_cb(
-    void *user_data, Logger::Level level, const std::string &message) noexcept
+    void *user_data,
+    Logger::Level level,
+    const std::string_view &message) noexcept
 {
     InstanceContext::Impl &impl =
         *reinterpret_cast<InstanceContext::Impl *>(user_data);
+
     switch (level) {
     case Logger::Level::ERROR:
         impl.l.error(message);

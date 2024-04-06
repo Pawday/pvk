@@ -9,22 +9,29 @@
 #include "pvk/log.hh"
 #include "pvk/log_utils.hh"
 
+
+#if defined(__clang__)
+#define CONSTEXPR_IF_CLANG constexpr
+#else
+#define CONSTEXPR_IF_CLANG
+#endif
+
 namespace pvk {
 
-constexpr std::string ansi_color(uint8_t r, uint8_t g, uint8_t b)
+CONSTEXPR_IF_CLANG std::string ansi_color(uint8_t r, uint8_t g, uint8_t b)
 {
     return std::format("\x1B[38;2;{};{};{}m", r, g, b);
 };
 
-constexpr std::string ansi_reset()
+CONSTEXPR_IF_CLANG std::string ansi_reset()
 {
     return "\x1B[0m";
 }
 
 void log_lines_to(
     std::ostream &stream,
-    const std::string prefix,
-    const std::string &message,
+    const std::string_view prefix,
+    const std::string_view &message,
     const std::vector<Segment> &segments)
 {
     for (auto segment : segments) {
@@ -33,7 +40,7 @@ void log_lines_to(
     }
 }
 
-void error(const std::string &message) noexcept
+void error(const std::string_view &message) noexcept
 try {
     std::cerr << ansi_color(0xff, 0, 0);
     auto lines = split_ln(message);
@@ -42,7 +49,7 @@ try {
 } catch (...) {
 }
 
-void warning(const std::string &message) noexcept
+void warning(const std::string_view &message) noexcept
 try {
     std::cerr << ansi_color(0xf6, 0xff, 0x00);
     auto lines = split_ln(message);
@@ -51,14 +58,14 @@ try {
 } catch (...) {
 }
 
-void info(const std::string &message) noexcept
+void info(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     log_lines_to(std::cout, "[pvk] [INFO ] ", message, lines);
 } catch (...) {
 }
 
-void debug(const std::string &message) noexcept
+void debug(const std::string_view &message) noexcept
 try {
     std::cout << ansi_color(0x2e, 0x86, 0xc9);
     auto lines = split_ln(message);
@@ -67,7 +74,7 @@ try {
 } catch (...) {
 }
 
-void trace(const std::string &message, const std::string &source) noexcept
+void trace(const std::string_view &message, const std::string_view &source) noexcept
 try {
     std::cerr << ansi_color(0x00, 0x55, 0x00);
     auto lines = split_ln(message);

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct Segment
@@ -11,7 +12,7 @@ struct Segment
     size_t size;
 };
 
-inline std::vector<Segment> split_ln(const std::string &data)
+inline std::vector<Segment> split_ln(const std::string_view &data)
 {
     size_t linebreaks = 0;
 
@@ -25,8 +26,11 @@ inline std::vector<Segment> split_ln(const std::string &data)
         return {{0, data.size()}};
     }
 
-    std::vector<Segment> output;
-    output.reserve(linebreaks);
+    static std::vector<Segment> output;
+    output.clear();
+    if (output.capacity() < linebreaks) {
+        output.reserve(linebreaks);
+    }
 
     size_t start = 0;
     size_t end = data.find_first_of('\n', start);
@@ -41,6 +45,8 @@ inline std::vector<Segment> split_ln(const std::string &data)
         start = end + 1;
         end = data.find_first_of('\n', start);
     }
+
+    output.push_back({start, data.size() - start});
 
     return output;
 }

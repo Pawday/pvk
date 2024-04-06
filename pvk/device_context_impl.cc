@@ -177,6 +177,9 @@ DeviceType DeviceContext::Impl::get_device_type()
     case VK_PHYSICAL_DEVICE_TYPE_CPU:
         return DeviceType::CPU;
     }
+
+    l.error("Unhandled vKDeviceType: Assume UNKNOWN");
+    return DeviceType::UNKNOWN;
 }
 
 DeviceContext::Impl::Impl(VkPhysicalDevice &&device) noexcept

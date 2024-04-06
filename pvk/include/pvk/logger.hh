@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 namespace pvk {
 
@@ -23,15 +24,15 @@ struct Logger
     Logger &operator=(const Logger &) = delete;
     Logger &operator=(Logger &&) = delete;
 
-    using Callback = void (*)(void *, Level, const std::string &) noexcept;
+    using Callback = void (*)(void *, Level, const std::string_view &) noexcept;
 
-    void error(const std::string &message) const noexcept;
-    void warning(const std::string &message) const noexcept;
-    void info(const std::string &message) const noexcept;
-    void debug(const std::string &message) const noexcept;
-    void trace(const std::string &message) const noexcept;
+    void error(const std::string_view &message) const noexcept;
+    void warning(const std::string_view &message) const noexcept;
+    void info(const std::string_view &message) const noexcept;
+    void debug(const std::string_view &message) const noexcept;
+    void trace(const std::string_view &message) const noexcept;
 
-    void set_name(const std::string &source_name) noexcept;
+    void set_name(const std::string_view &source_name) noexcept;
     void set_callback(Callback new_callback) noexcept;
     void set_userdata(void *user_data) noexcept
     {

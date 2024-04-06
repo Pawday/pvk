@@ -25,10 +25,10 @@ struct Logger::Detail
             "pvk::Logger at 0x{:x}", reinterpret_cast<size_t>(logger));
 
         if (logger->m_source_name.empty()) {
-            mangled_message = std::format("[{}] {}", addr_name, message);
+            mangled_message = std::format("[{}]│{}", addr_name, message);
         } else {
             mangled_message =
-                std::format("[{}] {}", logger->m_source_name, message);
+                std::format("[{}]│{}", logger->m_source_name, message);
         }
 
         if (logger->m_callback != nullptr) {
@@ -60,7 +60,7 @@ struct Logger::Detail
     static void dispatch(
         const void *user_data,
         Logger::Level level,
-        const std::string &message) noexcept
+        const std::string_view &message) noexcept
     try {
         auto lines = split_ln(message);
 
@@ -73,32 +73,32 @@ struct Logger::Detail
     }
 };
 
-void Logger::error(const std::string &message) const noexcept
+void Logger::error(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::ERROR, message);
 }
 
-void Logger::warning(const std::string &message) const noexcept
+void Logger::warning(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::WARNING, message);
 }
 
-void Logger::info(const std::string &message) const noexcept
+void Logger::info(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::INFO, message);
 }
 
-void Logger::debug(const std::string &message) const noexcept
+void Logger::debug(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::DEBUG, message);
 }
 
-void Logger::trace(const std::string &message) const noexcept
+void Logger::trace(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::TRACE, message);
 }
 
-void Logger::set_name(const std::string &source_name) noexcept
+void Logger::set_name(const std::string_view &source_name) noexcept
 try {
     m_source_name = source_name;
 } catch (...) {

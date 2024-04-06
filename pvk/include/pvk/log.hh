@@ -1,14 +1,14 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace pvk {
 
-void error(const std::string &message) noexcept;
-void warning(const std::string &message) noexcept;
-void info(const std::string &message) noexcept;
-void debug(const std::string &message) noexcept;
-void trace(const std::string &message, const std::string &source = "") noexcept;
+void error(const std::string_view &message) noexcept;
+void warning(const std::string_view &message) noexcept;
+void info(const std::string_view &message) noexcept;
+void debug(const std::string_view &message) noexcept;
+void trace(const std::string_view &message, const std::string_view &source = "") noexcept;
 
 // You need to include std::format to use this macro
 #define PVK_TRACE(message)                                                     \

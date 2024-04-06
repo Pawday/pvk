@@ -5,7 +5,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include <pvk/device_context.hh>
@@ -47,6 +46,8 @@ static std::string device_type_to_str(pvk::DeviceType t)
     case DeviceType::UNKNOWN:
         return "UNKNOWN";
     }
+
+    return "UNHANDLED";
 }
 
 } // namespace

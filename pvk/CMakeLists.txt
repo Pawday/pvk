@@ -68,10 +68,11 @@ target_pvk_options(pvk.objects)
 target_sources(pvk.objects PRIVATE
     device_context_impl.cc
     instance_context_impl.cc
+    layer_utils.cc
     loader.cc
     log_global.cc
+    log_utils_box.cc
     logger.cc
-    layer_utils.cc
     pipeline.cc
 )
 

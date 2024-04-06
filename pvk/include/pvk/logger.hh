@@ -9,8 +9,10 @@ struct Logger
 {
     enum class Level
     {
+        FATAL,
         ERROR,
         WARNING,
+        NOTICE,
         INFO,
         DEBUG,
         TRACE
@@ -26,8 +28,10 @@ struct Logger
 
     using Callback = void (*)(void *, Level, const std::string_view &) noexcept;
 
+    void fatal(const std::string_view &message) const noexcept;
     void error(const std::string_view &message) const noexcept;
     void warning(const std::string_view &message) const noexcept;
+    void notice(const std::string_view &message) const noexcept;
     void info(const std::string_view &message) const noexcept;
     void debug(const std::string_view &message) const noexcept;
     void trace(const std::string_view &message) const noexcept;

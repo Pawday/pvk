@@ -9,7 +9,6 @@
 #include "pvk/log.hh"
 #include "pvk/log_utils.hh"
 
-
 #if defined(__clang__)
 #define CONSTEXPR_IF_CLANG constexpr
 #else
@@ -40,50 +39,67 @@ void log_lines_to(
     }
 }
 
+void fatal(const std::string_view &message) noexcept
+try {
+    auto lines = split_ln(message);
+    std::string prefix = std::format("{}[FATAL] ", ansi_color(0xee, 0, 0));
+    log_lines_to(std::cerr, prefix, message, lines);
+    ansi_reset();
+} catch (...) {
+}
+
 void error(const std::string_view &message) noexcept
 try {
-    std::cerr << ansi_color(0xff, 0, 0);
     auto lines = split_ln(message);
-    log_lines_to(std::cerr, "[pvk] [ERROR] ", message, lines);
-    std::cerr << ansi_reset();
+    std::string prefix =
+        std::format("{}[ERROR]{} ", ansi_color(0xff, 0, 0), ansi_reset());
+    log_lines_to(std::cerr, prefix, message, lines);
 } catch (...) {
 }
 
 void warning(const std::string_view &message) noexcept
 try {
-    std::cerr << ansi_color(0xf6, 0xff, 0x00);
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[pvk] [WARN ] ", message, lines);
-    std::cerr << ansi_reset();
+
+    std::string prefix =
+        std::format("{}[WARN ]{} ", ansi_color(0xf6, 0xff, 0x00), ansi_reset());
+    log_lines_to(std::cout, prefix, message, lines);
+} catch (...) {
+}
+
+void notice(const std::string_view &message) noexcept
+try {
+    auto lines = split_ln(message);
+    std::string prefix =
+        std::format("{}[NOTE ]{} ", ansi_color(0xca, 0xfa, 0xee), ansi_reset());
+    log_lines_to(std::cout, prefix, message, lines);
 } catch (...) {
 }
 
 void info(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[pvk] [INFO ] ", message, lines);
+    log_lines_to(std::cout, "[INFO ] ", message, lines);
 } catch (...) {
 }
 
 void debug(const std::string_view &message) noexcept
 try {
-    std::cout << ansi_color(0x2e, 0x86, 0xc9);
+    std::string prefix =
+        std::format("{}[DEBUG]{} ", ansi_color(0x2e, 0x55, 0xff), ansi_reset());
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[pvk] [DEBUG] ", message, lines);
-    std::cout << ansi_reset();
+    log_lines_to(std::cout, prefix, message, lines);
 } catch (...) {
 }
 
-void trace(const std::string_view &message, const std::string_view &source) noexcept
+void trace(
+    const std::string_view &message, const std::string_view &source) noexcept
 try {
-    std::cerr << ansi_color(0x00, 0x55, 0x00);
     auto lines = split_ln(message);
+    std::string prefix =
+        std::format("{}[TRACE]{} ", ansi_color(0x00, 0x55, 0x00), ansi_reset());
     log_lines_to(
-        std::cerr,
-        std::format("{}{} ", "[pvk] [TRACE] ", source),
-        message,
-        lines);
-    std::cerr << ansi_reset();
+        std::cout, std::format("{}{}", prefix, source), message, lines);
 } catch (...) {
 }
 

@@ -1,3 +1,4 @@
+#include "pvk/log_utils.hh"
 #include <algorithm>
 #include <format>
 #include <memory>
@@ -103,7 +104,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
     }
 #endif
     if (full_extesions_list.size() != 0) {
@@ -116,21 +117,21 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         for (auto &ext : full_extesions_list) {
             lines.emplace_back(ext);
         }
-
-        auto max_line =
-            std::ranges::max_element(lines, [](const auto &l, const auto &r) {
-                return l.size() < r.size();
+        auto max_line = std::ranges::max_element(
+            lines, [](const auto &lhs, const auto &rhs) {
+                return lhs.size() < rhs.size();
             });
-        if (max_line != std::end(lines)) {
+        if (max_line != std::end(lines) && max_line_size < max_line->size()) {
             max_line_size = max_line->size();
         }
 
-        l.info(std::format(
-            "┌─{:─^{}}─┐", std::format(" {} ", label), max_line_size));
+        std::ranges::sort(lines);
+
+        l.info(box_title(label, max_line_size));
         for (auto &line : lines) {
-            l.info(std::format("│ {:<{}} │", line, max_line_size));
+            l.info(box_entry(line, max_line_size));
         }
-        l.info(std::format("└─{:─^{}}─┘", "", max_line_size));
+        l.info(box_foot(max_line_size));
     }
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
@@ -139,7 +140,7 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
     if (has_debug_utils) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
     } else {
-        l.warning("VK_EXT_debug_utils extension is not supported: Ignore");
+        l.notice("VK_EXT_debug_utils extension is not supported: Ignore");
     }
 
     if (has_debug_utils) {
@@ -298,14 +299,21 @@ void InstanceContext::Impl::debug_utils_log_cb(
         *reinterpret_cast<InstanceContext::Impl *>(user_data);
 
     switch (level) {
+    case Logger::Level::FATAL:
+        impl.l.fatal(message);
+        break;
     case Logger::Level::ERROR:
         impl.l.error(message);
         break;
     case Logger::Level::WARNING:
         impl.l.warning(message);
         break;
+    case Logger::Level::NOTICE:
+        impl.l.notice(message);
+        break;
     case Logger::Level::INFO:
-        [[fallthrough]];
+        impl.l.info(message);
+        break;
     case Logger::Level::DEBUG:
         impl.l.debug(message);
         break;

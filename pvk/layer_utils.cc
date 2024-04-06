@@ -12,6 +12,7 @@
 #include <pvk/logger.hh>
 
 #include "pvk/layer_utils.hh"
+#include "pvk/log_utils.hh"
 #include "pvk/result.hh"
 #include "pvk/vk_api.hh"
 
@@ -37,10 +38,10 @@ void dump_extensions_per_layer(
             lines.emplace_back();
         }
 
-        lines.emplace_back(std::string(layer.first));
+        lines.emplace_back(std::format("{}", std::string(layer.first)));
 
         for (auto &extension : layer.second) {
-            lines.emplace_back(std::format(" {}", std::string(extension)));
+            lines.emplace_back(std::format("- {}", std::string(extension)));
         }
         if (layer.second.size() == 0) {
             lines.emplace_back(std::format(" {}", "(No extensions)"));
@@ -48,19 +49,18 @@ void dump_extensions_per_layer(
     }
 
     auto max_line =
-        std::ranges::max_element(lines, [](const auto &l, const auto &r) {
-            return l.size() < r.size();
+        std::ranges::max_element(lines, [](const auto &lhs, const auto &rhs) {
+            return lhs.size() < rhs.size();
         });
-    if (max_line != std::end(lines)) {
+    if (max_line != std::end(lines) && max_line->size() > max_line_size) {
         max_line_size = max_line->size();
     }
 
-    l.info(
-        std::format("┌─{:─^{}}─┐", std::format(" {} ", label), max_line_size));
+    l.info(box_title(label, max_line_size));
     for (auto &line : lines) {
-        l.info(std::format("│ {: <{}} │", line, max_line_size));
+        l.info(box_entry(line, max_line_size));
     }
-    l.info(std::format("└─{:─^{}}─┘", "", max_line_size));
+    l.info(box_foot(max_line_size));
 }
 
 namespace {

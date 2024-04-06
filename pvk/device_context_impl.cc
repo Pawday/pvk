@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 #include <memory>
 #include <optional>
@@ -17,6 +18,7 @@
 
 #include "pvk/device_context_impl.hh"
 #include "pvk/layer_utils.hh"
+#include "pvk/log_utils.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 #include "pvk/vk_api.hh"
@@ -65,16 +67,35 @@ bool DeviceContext::Impl::connect()
         device_ext_map, std::format("{} layers", device_name), l);
 
     if (full_extesions_list.size() != 0) {
-        l.info(std::format(
-            "+{:=^50}+", std::format(" {} extensions ", device_name)));
+        std::string label = std::format("{} extensions", device_name);
+        size_t max_line_size = label.size();
+        std::vector<std::string> lines;
+        lines.reserve(full_extesions_list.size());
+
         for (auto &ext : full_extesions_list) {
-            l.info(std::format("| {: <49}|", ext));
+            lines.emplace_back(ext);
         }
-        l.info(std::format("+{:=^50}+", ""));
+
+        std::ranges::sort(lines);
+
+        auto max_line = std::ranges::max_element(
+            lines, [](const auto &lhs, const auto &rhs) {
+                return lhs.size() < rhs.size();
+            });
+        if (max_line != std::end(lines) && max_line_size < max_line->size()) {
+            max_line_size = max_line->size();
+        }
+
+        l.info(box_title(label, max_line_size));
+        for (auto &line : lines) {
+            l.info(box_entry(line, max_line_size));
+        }
+        l.info(box_foot(max_line_size));
     }
 
     auto enabled_layer_names =
         utils::StringPack::create(std::span(enabled_layers));
+
     auto enabled_layers_names_ptrs = enabled_layer_names->get();
     auto enabled_ext_names =
         utils::StringPack::create(std::span(enabled_extensions));
@@ -83,6 +104,8 @@ bool DeviceContext::Impl::connect()
             "Device connection failue: No host memory for connection info");
         return false;
     }
+
+    utils::StringPack::create(std::span(enabled_layers))->get();
 
     load_queue_families();
 
@@ -185,8 +208,7 @@ DeviceType DeviceContext::Impl::get_device_type()
 DeviceContext::Impl::Impl(VkPhysicalDevice &&device) noexcept
     : m_phy_device(std::move(device))
 {
-    l.set_name(std::format(
-        "DeviceContext 0x{:x}", reinterpret_cast<size_t>(m_phy_device)));
+    l.set_name(get_name());
     m_alloc = std::make_unique<Allocator>();
 }
 

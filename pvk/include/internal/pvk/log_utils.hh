@@ -50,3 +50,7 @@ inline std::vector<Segment> split_ln(const std::string_view &data)
 
     return output;
 }
+
+std::string box_title(std::string_view title, size_t box_width);
+std::string box_entry(std::string_view entry, size_t box_width);
+std::string box_foot(size_t box_width);

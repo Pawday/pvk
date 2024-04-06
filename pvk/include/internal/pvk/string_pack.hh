@@ -17,7 +17,7 @@ struct StringPack
     StringPack(const StringPack &) = delete;
     StringPack &operator=(const StringPack &) = delete;
 
-    StringPack(StringPack &) = default;
+    StringPack(StringPack &&) = default;
     StringPack &operator=(StringPack &&) = default;
 
     template <size_t EXTEND = std::dynamic_extent>
@@ -52,7 +52,7 @@ struct StringPack
         StringPack output;
         output.data = std::move(data);
         output.offsets = std::move(offsets);
-        return std::make_optional(output);
+        return std::make_optional(std::move(output));
 
     } catch (...) {
         return std::nullopt;
@@ -60,7 +60,11 @@ struct StringPack
 
     ~StringPack() = default;
 
-    std::vector<const char *> get() &
+
+    std::vector<const char *> get() const&& = delete;
+    std::vector<const char *> get() && = delete;
+
+    std::vector<const char *> get() const&
     {
         std::vector<const char *> output;
         output.reserve(offsets.size());

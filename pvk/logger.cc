@@ -37,11 +37,17 @@ struct Logger::Detail
         }
 
         switch (level) {
+        case Level::FATAL:
+            pvk::fatal(mangled_message);
+            break;
         case Level::ERROR:
             pvk::error(mangled_message);
             break;
         case Level::WARNING:
             pvk::warning(mangled_message);
+            break;
+        case Level::NOTICE:
+            pvk::notice(mangled_message);
             break;
         case Level::INFO:
             pvk::info(mangled_message);
@@ -73,6 +79,11 @@ struct Logger::Detail
     }
 };
 
+void Logger::fatal(const std::string_view &message) const noexcept
+{
+    Detail::dispatch(this, Logger::Level::FATAL, message);
+}
+
 void Logger::error(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::ERROR, message);
@@ -86,6 +97,11 @@ void Logger::warning(const std::string_view &message) const noexcept
 void Logger::info(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::INFO, message);
+}
+
+void Logger::notice(const std::string_view &message) const noexcept
+{
+    Detail::dispatch(this, Logger::Level::NOTICE, message);
 }
 
 void Logger::debug(const std::string_view &message) const noexcept

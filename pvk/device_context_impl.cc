@@ -107,11 +107,7 @@ bool DeviceContext::Impl::connect()
 
     utils::StringPack::create(std::span(enabled_layers))->get();
 
-    load_queue_families();
-
-    std::vector<VkQueueFamilyProperties> families =
-        std::get<std::vector<VkQueueFamilyProperties>>(m_device_meta);
-
+    std::vector<VkQueueFamilyProperties> families = get_queue_families();
     if (families.size() == 0) {
         l.warning("No single queue family to configure from");
         return false;
@@ -168,9 +164,7 @@ void DeviceContext::Impl::disconnect()
 
 DeviceType DeviceContext::Impl::get_device_type()
 {
-    load_device_props();
-    auto vk_device_type =
-        std::get<VkPhysicalDeviceProperties>(m_device_meta).deviceType;
+    auto vk_device_type = get_device_props().deviceType;
 
     std::string gpu_type;
 

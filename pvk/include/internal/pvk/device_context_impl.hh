@@ -73,31 +73,34 @@ struct alignas(DeviceContext) DeviceContext::Impl
         return true;
     }
 
-    void load_device_props()
+    VkPhysicalDeviceProperties get_device_props()
     {
         if (std::holds_alternative<VkPhysicalDeviceProperties>(m_device_meta)) {
-            return;
+            return std::get<VkPhysicalDeviceProperties>(m_device_meta);
         }
         VkPhysicalDeviceProperties new_props{};
         vkGetPhysicalDeviceProperties(m_phy_device, &new_props);
         m_device_meta = new_props;
+        return new_props;
     }
 
-    void load_device_features()
+    VkPhysicalDeviceFeatures get_device_features()
     {
         if (std::holds_alternative<VkPhysicalDeviceFeatures>(m_device_meta)) {
-            return;
+            return std::get<VkPhysicalDeviceFeatures>(m_device_meta);
         }
         VkPhysicalDeviceFeatures new_features{};
         vkGetPhysicalDeviceFeatures(m_phy_device, &new_features);
         m_device_meta = new_features;
+        return new_features;
     }
 
-    void load_queue_families()
+    std::vector<VkQueueFamilyProperties> get_queue_families()
     {
         if (std::holds_alternative<std::vector<VkQueueFamilyProperties>>(
                 m_device_meta)) {
-            return;
+            return std::get<std::vector<VkQueueFamilyProperties>>(
+                m_device_meta);
         }
 
         uint32_t nb_queues = 0;
@@ -109,12 +112,12 @@ struct alignas(DeviceContext) DeviceContext::Impl
             m_phy_device, &nb_queues, queues_props.data());
 
         m_device_meta = queues_props;
+        return queues_props;
     }
 
     std::string get_name()
     {
-        load_device_props();
-        return std::get<VkPhysicalDeviceProperties>(m_device_meta).deviceName;
+        return get_device_props().deviceName;
     }
 
     DeviceType get_device_type();

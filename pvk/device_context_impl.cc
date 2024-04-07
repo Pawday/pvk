@@ -12,7 +12,7 @@
 #include <cstddef>
 
 #include <pvk/device_context.hh>
-#include <pvk/instance_context.hh>
+#include <pvk/instance.hh>
 #include <pvk/logger.hh>
 #include <pvk/vk_allocator.hh>
 
@@ -113,12 +113,19 @@ bool DeviceContext::Impl::connect()
         return false;
     }
 
+    size_t q_idx = 0;
+    size_t nb_queues = 1;
+    std::vector<float> priors;
+    priors.resize(nb_queues);
+    std::ranges::fill(priors, 1.0);
+
+    l.trace(std::format("{} fam q nb {}", q_idx, families[q_idx].queueCount));
+
     VkDeviceQueueCreateInfo main_queue{};
     main_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    main_queue.queueCount = 1;
-    main_queue.queueFamilyIndex = 0;
-    float queue_priority = 1.0;
-    main_queue.pQueuePriorities = &queue_priority;
+    main_queue.queueCount = nb_queues;
+    main_queue.queueFamilyIndex = q_idx;
+    main_queue.pQueuePriorities = priors.data();
 
     VkDeviceCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

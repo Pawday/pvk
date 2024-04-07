@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <pvk/device_context.hh>
-#include <pvk/instance_context.hh>
+#include <pvk/instance.hh>
 
 #include <pvk/vk_loader.hh>
 
@@ -81,14 +81,14 @@ struct Application
     }
 
   private:
-    std::optional<InstanceContext> m_vk_context;
+    std::optional<Instance> m_vk_context;
 
     std::vector<DeviceContext> devices;
 };
 
 Application::Application()
 {
-    m_vk_context = InstanceContext::create();
+    m_vk_context = Instance::create();
     if (!m_vk_context) {
         return;
     }

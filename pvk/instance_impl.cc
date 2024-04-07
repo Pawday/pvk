@@ -1,4 +1,3 @@
-#include "pvk/log_utils.hh"
 #include <algorithm>
 #include <format>
 #include <memory>
@@ -14,7 +13,7 @@
 #include <cstdint>
 
 #include <pvk/device_context.hh>
-#include <pvk/instance_context.hh>
+#include <pvk/instance.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
 #include <pvk/vk_allocator.hh>
@@ -26,30 +25,31 @@
 #endif
 
 #include "pvk/device_context_impl.hh"
-#include "pvk/instance_context_impl.hh"
+#include "pvk/instance_impl.hh"
 #include "pvk/layer_utils.hh"
+#include "pvk/log_utils.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 
 namespace pvk {
 
-InstanceContext::InstanceContext(InstanceContext::Impl &&impl_obj) noexcept
+Instance::Instance(Instance::Impl &&impl_obj) noexcept
 {
-    new (this->impl) InstanceContext::Impl(std::move(impl_obj));
+    new (this->impl) Instance::Impl(std::move(impl_obj));
 }
 
-InstanceContext &InstanceContext::operator=(InstanceContext &&other) noexcept
+Instance &Instance::operator=(Instance &&other) noexcept
 {
     std::swap(this->impl, other.impl);
     return *this;
 }
 
-InstanceContext::~InstanceContext() noexcept
+Instance::~Instance() noexcept
 {
     Impl::cast_from(*this).~Impl();
 }
 
-InstanceContext::Impl::~Impl() noexcept
+Instance::Impl::~Impl() noexcept
 {
     if (m_vk_instance == NULL) {
         return;
@@ -66,14 +66,14 @@ InstanceContext::Impl::~Impl() noexcept
 #endif
 }
 
-std::optional<InstanceContext> InstanceContext::create() noexcept
+std::optional<Instance> Instance::create() noexcept
 {
-    return InstanceContext::Impl::create();
+    return Instance::Impl::create();
 }
 
-std::optional<InstanceContext> InstanceContext::Impl::create()
+std::optional<Instance> Instance::Impl::create()
 {
-    InstanceContext::Impl impl;
+    Instance::Impl impl;
     impl.m_allocator = std::make_unique<Allocator>();
     impl.l.set_name("InstanceContext");
 
@@ -255,10 +255,10 @@ std::optional<InstanceContext> InstanceContext::Impl::create()
         return std::nullopt;
     }
 
-    return InstanceContext(std::move(impl));
+    return Instance(std::move(impl));
 }
 
-bool InstanceContext::Impl::load_devices()
+bool Instance::Impl::load_devices()
 {
     uint32_t cnt_devices = 0;
     VkResult dev_enum_status =
@@ -290,13 +290,13 @@ bool InstanceContext::Impl::load_devices()
 }
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
-void InstanceContext::Impl::debug_utils_log_cb(
+void Instance::Impl::debug_utils_log_cb(
     void *user_data,
     Logger::Level level,
     const std::string_view &message) noexcept
 {
-    InstanceContext::Impl &impl =
-        *reinterpret_cast<InstanceContext::Impl *>(user_data);
+    Instance::Impl &impl =
+        *reinterpret_cast<Instance::Impl *>(user_data);
 
     switch (level) {
     case Logger::Level::FATAL:
@@ -325,13 +325,13 @@ void InstanceContext::Impl::debug_utils_log_cb(
 }
 #endif
 
-InstanceContext::InstanceContext(InstanceContext &&other) noexcept
+Instance::Instance(Instance &&other) noexcept
 {
-    auto &other_impl = InstanceContext::Impl::cast_from(other);
-    new (impl) InstanceContext::Impl(std::move(other_impl));
+    auto &other_impl = Instance::Impl::cast_from(other);
+    new (impl) Instance::Impl(std::move(other_impl));
 }
 
-InstanceContext::Impl::Impl(InstanceContext::Impl &&other) noexcept
+Instance::Impl::Impl(Instance::Impl &&other) noexcept
     : m_allocator(std::move(other.m_allocator)),
       m_vk_instance(std::move(other.m_vk_instance)), l(std::move(other.l)),
       m_devices(std::move(other.m_devices))
@@ -348,23 +348,23 @@ InstanceContext::Impl::Impl(InstanceContext::Impl &&other) noexcept
     other.m_vk_instance = VK_NULL_HANDLE;
 }
 
-size_t InstanceContext::get_device_count() const noexcept
+size_t Instance::get_device_count() const noexcept
 {
     return Impl::cast_from(*this).get_device_count();
 }
-size_t InstanceContext::Impl::get_device_count() const noexcept
+size_t Instance::Impl::get_device_count() const noexcept
 {
     return this->m_devices.size();
 }
 
 std::optional<DeviceContext>
-    InstanceContext::get_device(size_t device_idx) const noexcept
+    Instance::get_device(size_t device_idx) const noexcept
 {
     return Impl::cast_from(*this).get_device(device_idx);
 }
 
 std::optional<DeviceContext>
-    InstanceContext::Impl::get_device(size_t device_idx) const noexcept
+    Instance::Impl::get_device(size_t device_idx) const noexcept
 {
     if (device_idx >= m_devices.size()) {
         return std::nullopt;

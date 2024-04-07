@@ -1,31 +1,30 @@
 #pragma once
 
-#include "pvk/device_context.hh"
 #include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
 #include <vector>
 
-#include <pvk/instance_context.hh>
+#include <pvk/device_context.hh>
+#include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
 #if (PVK_USE_EXT_DEBUG_UTILS)
 #include <pvk/extensions/debug_utils_context.hh>
-#include <string>
 #endif
 
 #include "pvk/vk_allocator.hh"
 #include "pvk/vk_api.hh"
 
 namespace pvk {
-struct alignas(InstanceContext) InstanceContext::Impl
+struct alignas(Instance) Instance::Impl
 {
-    static std::optional<InstanceContext> create();
+    static std::optional<Instance> create();
 
     static void assert_size_for_move()
     {
-        static_assert(sizeof(InstanceContext::Impl) <= impl_size);
+        static_assert(sizeof(Instance::Impl) <= impl_size);
     }
     Impl(Impl &&other) noexcept;
     Impl &operator=(Impl &&other) = delete;
@@ -34,12 +33,12 @@ struct alignas(InstanceContext) InstanceContext::Impl
 
     ~Impl() noexcept;
 
-    static Impl &cast_from(InstanceContext &inst)
+    static Impl &cast_from(Instance &inst)
     {
         return *reinterpret_cast<Impl *>(inst.impl);
     }
 
-    static Impl const &cast_from(InstanceContext const &inst)
+    static Impl const &cast_from(Instance const &inst)
     {
         return *reinterpret_cast<Impl const *>(inst.impl);
     }
@@ -64,12 +63,9 @@ struct alignas(InstanceContext) InstanceContext::Impl
     std::unique_ptr<DebugUtilsContext> debugger = nullptr;
 #endif
 
-    static bool check_impl_sizes()
+    static void check_impl_sizes()
     {
-        static_assert(
-            sizeof(InstanceContext::Impl) < InstanceContext::impl_size);
-
-        return true;
+        static_assert(sizeof(Instance::Impl) < Instance::impl_size);
     }
 
     Impl() = default;

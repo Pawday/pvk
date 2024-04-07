@@ -67,7 +67,7 @@ target_link_libraries(pvk.objects PRIVATE pvk.headers pvk.headers.internal)
 target_pvk_options(pvk.objects)
 target_sources(pvk.objects PRIVATE
     device_context_impl.cc
-    instance_context_impl.cc
+    instance_impl.cc
     layer_utils.cc
     loader.cc
     log_global.cc

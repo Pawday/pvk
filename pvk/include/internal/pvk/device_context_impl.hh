@@ -11,7 +11,7 @@
 #include <cstdint>
 
 #include <pvk/device_context.hh>
-#include <pvk/instance_context.hh>
+#include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
 #include "pvk/vk_allocator.hh"

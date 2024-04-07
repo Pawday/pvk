@@ -23,7 +23,7 @@ struct PVK_API alignas(std::max_align_t) Instance
     std::optional<DeviceContext> get_device(size_t device_idx) const noexcept;
 
   private:
-    static constexpr size_t impl_size = 128;
+    static constexpr size_t impl_size = 256;
     std::byte impl[impl_size];
     struct Impl;
     Instance(Impl &&) noexcept;

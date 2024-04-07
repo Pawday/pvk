@@ -22,10 +22,6 @@ struct alignas(Instance) Instance::Impl
 {
     static std::optional<Instance> create();
 
-    static void assert_size_for_move()
-    {
-        static_assert(sizeof(Instance::Impl) <= impl_size);
-    }
     Impl(Impl &&other) noexcept;
     Impl &operator=(Impl &&other) = delete;
     Impl(const Impl &) = delete;

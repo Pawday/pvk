@@ -117,9 +117,7 @@ bool DeviceContext::Impl::connect()
     size_t nb_queues = 1;
     std::vector<float> priors;
     priors.resize(nb_queues);
-    std::ranges::fill(priors, 1.0);
-
-    l.trace(std::format("{} fam q nb {}", q_idx, families[q_idx].queueCount));
+    std::ranges::fill(priors, 1.0f);
 
     VkDeviceQueueCreateInfo main_queue{};
     main_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;

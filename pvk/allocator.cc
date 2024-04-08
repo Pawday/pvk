@@ -51,7 +51,7 @@ namespace pvk {
 
 struct Allocator::ImplFriend
 {
-    static void *vkAllocationFunction(
+    static void* VKAPI_CALL vkAllocationFunction(
         void *allocator_p,
         size_t size,
         size_t alignment,
@@ -68,15 +68,6 @@ struct Allocator::ImplFriend
 #endif
         }
 
-        /*
-         * VK_LAYER_NV_optimus produce heap buffer overflow
-         * if nevidia_memory_workaround_multiplier < 32
-         */
-#if defined(GIVE_NEVIDIA_MORE_MEMORY)
-        constexpr size_t nevidia_memory_workaround_multiplier = 32;
-        aligned_size += alignment * nevidia_memory_workaround_multiplier;
-#endif
-
         void *new_block = aligned_alloc_wrap(alignment, aligned_size);
         if (new_block == nullptr) {
             return nullptr;
@@ -91,7 +82,7 @@ struct Allocator::ImplFriend
         return new_block;
     }
 
-    static void vkFreeFunction(void *allocator_p, void *pMemory)
+    static void VKAPI_CALL vkFreeFunction(void *allocator_p, void *pMemory)
     {
         if (pMemory == nullptr) {
             return;
@@ -112,7 +103,7 @@ struct Allocator::ImplFriend
         aligned_free_wrap(pMemory);
     }
 
-    static void *vkReallocationFunction(
+    static void* VKAPI_CALL vkReallocationFunction(
         void *allocator_p,
         void *original_p,
         size_t size,
@@ -140,12 +131,12 @@ struct Allocator::ImplFriend
             return nullptr;
         }
 
-        std::memcpy(new_block, original_p, size);
+        std::memcpy(new_block, original_p, orig_block_it->second.size);
         vkFreeFunction(allocator_p, original_p);
         return new_block;
     }
 
-    static void vkInternalAllocationNotification(
+    static void VKAPI_CALL vkInternalAllocationNotification(
         void *allocator_p,
         size_t size,
         VkInternalAllocationType allocationType,
@@ -159,7 +150,7 @@ struct Allocator::ImplFriend
         return;
     }
 
-    static void vkInternalFreeNotification(
+    static void VKAPI_CALL vkInternalFreeNotification(
         void *allocator_p,
         size_t size,
         VkInternalAllocationType allocationType,
@@ -177,8 +168,10 @@ struct Allocator::ImplFriend
 Allocator::Allocator() noexcept
 {
     m_callbacks.pUserData = this;
-    m_callbacks.pfnAllocation = Allocator::ImplFriend::vkAllocationFunction;
-    m_callbacks.pfnReallocation = Allocator::ImplFriend::vkReallocationFunction;
+    m_callbacks.pfnAllocation =
+        Allocator::ImplFriend::vkAllocationFunction;
+    m_callbacks.pfnReallocation = 
+        Allocator::ImplFriend::vkReallocationFunction;
     m_callbacks.pfnFree = Allocator::ImplFriend::vkFreeFunction;
 
     m_callbacks.pfnInternalAllocation =

@@ -50,14 +50,12 @@ set_property(TARGET pvk.allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk.allocator PRIVATE pvk.headers pvk.headers.internal)
 target_pvk_options(pvk.allocator)
 
-if (PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
-    target_compile_definitions(pvk.allocator PRIVATE PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
-endif()
-
 if(WIN32)
     target_compile_definitions(pvk.allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
-else()
-    target_compile_definitions(pvk.allocator PRIVATE GIVE_NEVIDIA_MORE_MEMORY)
+endif()
+
+if (PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
+    target_compile_definitions(pvk.allocator PRIVATE PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
 endif()
 
 add_library(pvk.objects OBJECT)

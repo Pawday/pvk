@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/instance.hh>
 
 #include <pvk/vk_loader.hh>
@@ -71,7 +71,7 @@ struct Application
 
     void log_devices()
     {
-        auto log_device = [](DeviceContext &device) {
+        auto log_device = [](Device &device) {
             std::cout << std::format(
                 "Found {} device \"{}\"\n",
                 device_type_to_str(device.get_device_type()),
@@ -83,7 +83,7 @@ struct Application
   private:
     std::optional<Instance> m_vk_context;
 
-    std::vector<DeviceContext> devices;
+    std::vector<Device> devices;
 };
 
 Application::Application()
@@ -98,7 +98,7 @@ Application::Application()
     std::cout << std::format("Found {} devices\n", devices_count);
 
     for (size_t device_idx = 0; device_idx < devices_count; device_idx++) {
-        std::optional<DeviceContext> device_ctx =
+        std::optional<Device> device_ctx =
             m_vk_context->get_device(device_idx);
 
         std::cout << std::format(

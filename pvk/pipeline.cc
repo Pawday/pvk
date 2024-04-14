@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/pipeline.hh>
 
 #include "pvk/log.hh"
@@ -19,7 +19,7 @@ namespace pvk {
 
 struct Pipeline::Impl
 {
-    Impl(std::shared_ptr<DeviceContext> device_context) noexcept
+    Impl(std::shared_ptr<Device> device_context) noexcept
         : m_device_context(device_context)
     {
         l.set_name("Pipeline");
@@ -70,7 +70,7 @@ struct Pipeline::Impl
 
   private:
     std::vector<VkShaderModule> m_shaders;
-    std::shared_ptr<DeviceContext> m_device_context;
+    std::shared_ptr<Device> m_device_context;
     VkPipeline m_pipeline = VK_NULL_HANDLE;
     std::unique_ptr<Allocator> m_allocator = nullptr;
     Logger l;
@@ -82,7 +82,7 @@ Pipeline::Pipeline(Impl &&impl_obj) noexcept
 }
 
 std::optional<Pipeline>
-    Pipeline::create(std::shared_ptr<DeviceContext> device_context) noexcept
+    Pipeline::create(std::shared_ptr<Device> device_context) noexcept
 {
     if (device_context == nullptr) {
         pvk::error("Pipeline::create called with nullptr");

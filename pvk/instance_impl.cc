@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/instance.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
@@ -24,7 +24,7 @@
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
-#include "pvk/device_context_impl.hh"
+#include "pvk/device_impl.hh"
 #include "pvk/instance_impl.hh"
 #include "pvk/layer_utils.hh"
 #include "pvk/log_utils.hh"
@@ -357,13 +357,13 @@ size_t Instance::Impl::get_device_count() const noexcept
     return this->m_devices.size();
 }
 
-std::optional<DeviceContext>
+std::optional<Device>
     Instance::get_device(size_t device_idx) const noexcept
 {
     return Impl::cast_from(*this).get_device(device_idx);
 }
 
-std::optional<DeviceContext>
+std::optional<Device>
     Instance::Impl::get_device(size_t device_idx) const noexcept
 {
     if (device_idx >= m_devices.size()) {
@@ -372,9 +372,9 @@ std::optional<DeviceContext>
 
     VkPhysicalDevice physical_device = m_devices[device_idx];
 
-    DeviceContext::Impl i(std::move(physical_device));
+    Device::Impl i(std::move(physical_device));
 
-    return DeviceContext(std::move(i));
+    return Device(std::move(i));
 }
 
 } // namespace pvk

@@ -64,7 +64,7 @@ set_property(TARGET pvk.objects PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk.objects PRIVATE pvk.headers pvk.headers.internal)
 target_pvk_options(pvk.objects)
 target_sources(pvk.objects PRIVATE
-    device_context_impl.cc
+    device_impl.cc
     instance_impl.cc
     layer_utils.cc
     loader.cc

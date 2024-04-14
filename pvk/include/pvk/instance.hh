@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/symvis.hh>
 
 namespace pvk {
@@ -20,7 +20,7 @@ struct PVK_API alignas(std::max_align_t) Instance
     Instance &operator=(const Instance &) = delete;
 
     size_t get_device_count() const noexcept;
-    std::optional<DeviceContext> get_device(size_t device_idx) const noexcept;
+    std::optional<Device> get_device(size_t device_idx) const noexcept;
 
   private:
     static constexpr size_t impl_size = 256;

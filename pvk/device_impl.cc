@@ -11,12 +11,12 @@
 
 #include <cstddef>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/instance.hh>
 #include <pvk/logger.hh>
 #include <pvk/vk_allocator.hh>
 
-#include "pvk/device_context_impl.hh"
+#include "pvk/device_impl.hh"
 #include "pvk/layer_utils.hh"
 #include "pvk/log_utils.hh"
 #include "pvk/result.hh"
@@ -25,7 +25,7 @@
 
 namespace pvk {
 
-bool DeviceContext::Impl::connect()
+bool Device::Impl::connect()
 {
     if (m_device != VK_NULL_HANDLE) {
         l.warning("Connection already established: Ignore connect request");
@@ -152,7 +152,7 @@ bool DeviceContext::Impl::connect()
     return true;
 }
 
-void DeviceContext::Impl::disconnect()
+void Device::Impl::disconnect()
 {
     if (m_device == VK_NULL_HANDLE) {
         l.warning("No connection: Ignore disconnect request");
@@ -167,7 +167,7 @@ void DeviceContext::Impl::disconnect()
     m_device = VK_NULL_HANDLE;
 }
 
-DeviceType DeviceContext::Impl::get_device_type()
+DeviceType Device::Impl::get_device_type()
 {
     auto vk_device_type = get_device_props().deviceType;
 
@@ -204,50 +204,50 @@ DeviceType DeviceContext::Impl::get_device_type()
     return DeviceType::UNKNOWN;
 }
 
-DeviceContext::Impl::Impl(VkPhysicalDevice &&device) noexcept
+Device::Impl::Impl(VkPhysicalDevice &&device) noexcept
     : m_phy_device(std::move(device))
 {
     l.set_name(get_name());
     m_alloc = std::make_unique<Allocator>();
 }
 
-DeviceContext::DeviceContext(Impl &&o) noexcept
+Device::Device(Impl &&o) noexcept
 {
     new (impl) Impl(std::move(o));
 }
 
-DeviceContext::DeviceContext(DeviceContext &&o) noexcept
+Device::Device(Device &&o) noexcept
 {
     new (impl) Impl(std::move(Impl::cast_from(o)));
 }
 
-DeviceContext &DeviceContext::operator=(DeviceContext &&o) noexcept
+Device &Device::operator=(Device &&o) noexcept
 {
     std::swap(this->impl, o.impl);
     return *this;
 }
 
-DeviceContext::~DeviceContext() noexcept
+Device::~Device() noexcept
 {
     Impl::cast_from(*this).~Impl();
 }
 
-std::string DeviceContext::get_name()
+std::string Device::get_name()
 {
     return Impl::cast_from(*this).get_name();
 }
 
-DeviceType DeviceContext::get_device_type()
+DeviceType Device::get_device_type()
 {
     return Impl::cast_from(*this).get_device_type();
 }
 
-bool DeviceContext::connect()
+bool Device::connect()
 {
     return Impl::cast_from(*this).connect();
 }
 
-bool DeviceContext::connected() const
+bool Device::connected() const
 {
     return Impl::cast_from(*this).connected();
 }

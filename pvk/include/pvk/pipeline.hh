@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <optional>
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/symvis.hh>
 
 namespace pvk {
@@ -13,7 +13,7 @@ namespace pvk {
 struct PVK_API alignas(std::max_align_t) Pipeline
 {
     static std::optional<Pipeline>
-        create(std::shared_ptr<DeviceContext> device_context) noexcept;
+        create(std::shared_ptr<Device> device_context) noexcept;
     Pipeline(Pipeline &&) noexcept;
     ~Pipeline() noexcept;
 

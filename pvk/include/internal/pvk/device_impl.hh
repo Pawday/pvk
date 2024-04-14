@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
@@ -19,7 +19,7 @@
 
 namespace pvk {
 
-struct alignas(DeviceContext) DeviceContext::Impl
+struct alignas(Device) Device::Impl
 {
     bool connect();
     bool connected() const
@@ -57,19 +57,19 @@ struct alignas(DeviceContext) DeviceContext::Impl
     Impl(const Impl &) = delete;
     Impl &operator=(const Impl &) = delete;
 
-    static Impl &cast_from(DeviceContext &ctx)
+    static Impl &cast_from(Device &device)
     {
-        return *reinterpret_cast<Impl *>(ctx.impl);
+        return *reinterpret_cast<Impl *>(device.impl);
     }
 
-    static Impl const &cast_from(DeviceContext const &ctx)
+    static Impl const &cast_from(Device const &device)
     {
-        return *reinterpret_cast<Impl const *>(ctx.impl);
+        return *reinterpret_cast<Impl const *>(device.impl);
     }
 
     static bool assert_size()
     {
-        static_assert(sizeof(Impl) < DeviceContext::impl_size);
+        static_assert(sizeof(Impl) < Device::impl_size);
         return true;
     }
 

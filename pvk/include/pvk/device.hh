@@ -15,12 +15,12 @@ enum class DeviceType
     CPU
 };
 
-struct PVK_API alignas(std::max_align_t) DeviceContext
+struct PVK_API alignas(std::max_align_t) Device
 {
-    DeviceContext(DeviceContext &&) noexcept;
-    DeviceContext &operator=(DeviceContext &&) noexcept;
+    Device(Device &&) noexcept;
+    Device &operator=(Device &&) noexcept;
 
-    ~DeviceContext() noexcept;
+    ~Device() noexcept;
 
     std::string get_name();
     DeviceType get_device_type();
@@ -28,11 +28,11 @@ struct PVK_API alignas(std::max_align_t) DeviceContext
     bool connect();
     bool connected() const;
 
-    DeviceContext(DeviceContext const &) = delete;
-    DeviceContext &operator=(DeviceContext const &) = delete;
+    Device(Device const &) = delete;
+    Device &operator=(Device const &) = delete;
 
     struct Impl;
-    DeviceContext(Impl &&) noexcept;
+    Device(Impl &&) noexcept;
 
   private:
     static constexpr size_t impl_size = 1024;

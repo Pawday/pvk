@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#include <pvk/device_context.hh>
+#include <pvk/device.hh>
 #include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
@@ -42,7 +42,7 @@ struct alignas(Instance) Instance::Impl
     bool load_devices();
 
     size_t get_device_count() const noexcept;
-    std::optional<DeviceContext> get_device(size_t device_idx) const noexcept;
+    std::optional<Device> get_device(size_t device_idx) const noexcept;
 
   private:
     std::shared_ptr<Allocator> m_allocator = nullptr;

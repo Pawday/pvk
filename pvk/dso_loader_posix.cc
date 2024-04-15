@@ -14,13 +14,13 @@
 namespace {
 static void log_preload_error(const std::string &msg)
 try {
-    pvk::debug(std::format("DSO Preload error: \"{}\"", msg));
+    pvk::debug("DSO Preload error: \"{}\"", msg);
 } catch (...) {
 }
 
 static void log_unload_failue(const std::string &lib_name)
 try {
-    pvk::warning(std::format("Unload library {} failue", lib_name));
+    pvk::warning("Unload library {} failue", lib_name);
 } catch (...) {
 }
 
@@ -37,10 +37,10 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = dlopen(library_file.c_str(), RTLD_NOW);
     char *load_status = dlerror();
     if (load_status != NULL) {
-        pvk::warning(std::format(
+        pvk::warning(
             "Failue loading library from: \"{}\" reason \"{}\"\n",
             library_file,
-            load_status));
+            load_status);
         return std::nullopt;
     }
 

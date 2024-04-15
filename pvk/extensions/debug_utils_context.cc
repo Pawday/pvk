@@ -135,8 +135,7 @@ bool DebugUtilsContext::create_messenger(
     auto create_status = DebugUtilsEXT::CreateMessenger(
         instance, &m_info, m_allocator->get_callbacks(), &new_messenger);
     if (create_status != VK_SUCCESS) {
-        pvk::warning(std::format(
-            "Messager create failue - {}", vk_to_str(create_status)));
+        pvk::warning("Messager create failue - {}", vk_to_str(create_status));
         return false;
     }
 

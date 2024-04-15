@@ -54,7 +54,7 @@ void log_lines_to(
     }
 }
 
-void fatal(const std::string_view &message) noexcept
+void raw_fatal(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix = std::format("{}[FATAL]", ansi_color(0xee, 0, 0));
@@ -63,7 +63,7 @@ try {
 } catch (...) {
 }
 
-void error(const std::string_view &message) noexcept
+void raw_error(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix =
@@ -72,7 +72,7 @@ try {
 } catch (...) {
 }
 
-void warning(const std::string_view &message) noexcept
+void raw_warning(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
 
@@ -82,7 +82,7 @@ try {
 } catch (...) {
 }
 
-void notice(const std::string_view &message) noexcept
+void raw_notice(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix =
@@ -91,14 +91,14 @@ try {
 } catch (...) {
 }
 
-void info(const std::string_view &message) noexcept
+void raw_info(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     log_lines_to(std::cout, "[INFO ]", message, lines);
 } catch (...) {
 }
 
-void debug(const std::string_view &message) noexcept
+void raw_debug(const std::string_view &message) noexcept
 try {
     std::string prefix =
         std::format("{}[DEBUG]{}", ansi_color(0x2e, 0x55, 0xff), ansi_reset());
@@ -107,12 +107,11 @@ try {
 } catch (...) {
 }
 
-void trace(
-    const std::string_view &message, const std::string_view &prefix) noexcept
+void raw_trace(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
-    std::string prefix_mangled = std::format(
-        "{}[TRACE]{}{}", ansi_color(0x00, 0x55, 0x00), prefix, ansi_reset());
+    std::string prefix_mangled =
+        std::format("{}[TRACE]{}", ansi_color(0x00, 0x55, 0x00), ansi_reset());
     log_lines_to(std::cout, prefix_mangled, message, lines);
 } catch (...) {
 }

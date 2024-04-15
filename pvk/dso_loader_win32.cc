@@ -20,7 +20,7 @@ namespace {
 
 static void log_unload_failue(const std::string &lib_name)
 try {
-    pvk::warning(std::format("Unload library {} failue", lib_name));
+    pvk::warning("Unload library {} failue", lib_name);
 } catch (...) {
 }
 
@@ -33,10 +33,10 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     void *new_handle = LoadLibraryA(library_file.c_str());
     DWORD last_error_code = GetLastError();
     if (new_handle == NULL) {
-        pvk::warning(std::format(
+        pvk::warning(
             "Failue loading library from: \"{}\" error code 0x{:X}",
             library_file,
-            last_error_code));
+            last_error_code);
         return std::nullopt;
     }
 

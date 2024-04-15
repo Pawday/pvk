@@ -38,25 +38,25 @@ struct Logger::Detail
 
         switch (level) {
         case Level::FATAL:
-            pvk::fatal(mangled_message);
+            pvk::fatal("{}", mangled_message);
             break;
         case Level::ERROR:
-            pvk::error(mangled_message);
+            pvk::error("{}", mangled_message);
             break;
         case Level::WARNING:
-            pvk::warning(mangled_message);
+            pvk::warning("{}", mangled_message);
             break;
         case Level::NOTICE:
-            pvk::notice(mangled_message);
+            pvk::notice("{}", mangled_message);
             break;
         case Level::INFO:
-            pvk::info(mangled_message);
+            pvk::info("{}", mangled_message);
             break;
         case Level::DEBUG:
-            pvk::debug(mangled_message);
+            pvk::debug("{}", mangled_message);
             break;
         case Level::TRACE:
-            pvk::trace(mangled_message);
+            pvk::trace("{}", mangled_message);
             break;
         }
 

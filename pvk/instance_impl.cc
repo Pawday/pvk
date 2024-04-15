@@ -231,7 +231,6 @@ std::optional<Instance> Instance::Impl::create()
     }
 
     if (has_debug_utils && debug_utils_load_status) {
-        enabled_extensions.emplace_back("VK_EXT_debug_utils");
         l.info("Extension \"VK_EXT_debug_utils\" is enabled");
     }
 

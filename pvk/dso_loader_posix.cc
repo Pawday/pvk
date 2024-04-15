@@ -14,7 +14,7 @@
 namespace {
 static void log_preload_error(const std::string &msg)
 try {
-    pvk::warning(std::format("[DEBUG]: DSO Preload error: \"{}\"\n", msg));
+    pvk::debug(std::format("DSO Preload error: \"{}\"", msg));
 } catch (...) {
 }
 
@@ -55,7 +55,8 @@ SymLoader::SymLoader() = default;
 SymLoader::SymLoader(SymLoader &&other) noexcept
 {
     m_library_path = std::move(other.m_library_path);
-    std::swap(m_handle, other.m_handle);
+    m_handle = other.m_handle;
+    other.m_handle = nullptr;
 }
 
 std::optional<void *> SymLoader::load_sym(const std::string &symname)

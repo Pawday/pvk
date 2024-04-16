@@ -24,16 +24,16 @@ static VkBool32 callback(
 
     switch (messageSeverity) {
     case DebugUtilsEXT::MessageSeverityFlagBits::VERBOSE_BIT:
-        ctx->get_logger().debug(pCallbackData->pMessage);
+        ctx->get_logger().debug("{}", pCallbackData->pMessage);
         break;
     case DebugUtilsEXT::MessageSeverityFlagBits::INFO_BIT:
-        ctx->get_logger().info(pCallbackData->pMessage);
+        ctx->get_logger().info("{}", pCallbackData->pMessage);
         break;
     case DebugUtilsEXT::MessageSeverityFlagBits::WARNING_BIT:
-        ctx->get_logger().warning(pCallbackData->pMessage);
+        ctx->get_logger().warning("{}", pCallbackData->pMessage);
         break;
     case DebugUtilsEXT::MessageSeverityFlagBits::ERROR_BIT:
-        ctx->get_logger().error(pCallbackData->pMessage);
+        ctx->get_logger().error("{}", pCallbackData->pMessage);
         break;
     }
 

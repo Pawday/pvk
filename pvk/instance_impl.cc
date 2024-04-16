@@ -127,11 +127,11 @@ std::optional<Instance> Instance::Impl::create()
 
         std::ranges::sort(lines);
 
-        l.info(box_title(label, max_line_size));
+        l.info("{}", box_title(label, max_line_size));
         for (auto &line : lines) {
-            l.info(box_entry(line, max_line_size));
+            l.info("{}", box_entry(line, max_line_size));
         }
-        l.info(box_foot(max_line_size));
+        l.info("{}", box_foot(max_line_size));
     }
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
@@ -208,15 +208,15 @@ std::optional<Instance> Instance::Impl::create()
         &vk_instance_info, impl.m_allocator->get_callbacks(), &new_instance);
 
     if (instance_create_status != VK_SUCCESS) {
-        l.warning(std::format(
+        l.warning(
             "Creating vulkan context failue: \"{}\"",
-            vk_to_str(instance_create_status)));
+            vk_to_str(instance_create_status));
         return std::nullopt;
     }
     impl.m_vk_instance = new_instance;
-    l.info(std::format(
+    l.info(
         "Created instance with handle 0x{:x}",
-        reinterpret_cast<size_t>(impl.m_vk_instance)));
+        reinterpret_cast<size_t>(impl.m_vk_instance));
     l.set_name(std::format(
         "InstanceContext 0x{:x}",
         reinterpret_cast<size_t>(impl.m_vk_instance)));
@@ -263,9 +263,9 @@ bool Instance::Impl::load_devices()
     VkResult dev_enum_status =
         vkEnumeratePhysicalDevices(m_vk_instance, &cnt_devices, nullptr);
     if (dev_enum_status != VK_SUCCESS) {
-        l.warning(std::format(
+        l.warning(
             "Counting vulkan physical devices failue: \"{}\"",
-            vk_to_str(dev_enum_status)));
+            vk_to_str(dev_enum_status));
         return false;
     }
     if (cnt_devices == 0) {
@@ -277,10 +277,10 @@ bool Instance::Impl::load_devices()
     dev_enum_status =
         vkEnumeratePhysicalDevices(m_vk_instance, &cnt_devices, devices.data());
     if (dev_enum_status != VK_SUCCESS) {
-        l.warning(std::format(
+        l.warning(
             "Enumerating vulkan physical devices failue: "
             "\"{}\"",
-            vk_to_str(dev_enum_status)));
+            vk_to_str(dev_enum_status));
         return {};
     }
 
@@ -294,30 +294,29 @@ void Instance::Impl::debug_utils_log_cb(
     Logger::Level level,
     const std::string_view &message) noexcept
 {
-    Instance::Impl &impl =
-        *reinterpret_cast<Instance::Impl *>(user_data);
+    Instance::Impl &impl = *reinterpret_cast<Instance::Impl *>(user_data);
 
     switch (level) {
     case Logger::Level::FATAL:
-        impl.l.fatal(message);
+        impl.l.fatal("{}", message);
         break;
     case Logger::Level::ERROR:
-        impl.l.error(message);
+        impl.l.error("{}", message);
         break;
     case Logger::Level::WARNING:
-        impl.l.warning(message);
+        impl.l.warning("{}", message);
         break;
     case Logger::Level::NOTICE:
-        impl.l.notice(message);
+        impl.l.notice("{}", message);
         break;
     case Logger::Level::INFO:
-        impl.l.info(message);
+        impl.l.info("{}", message);
         break;
     case Logger::Level::DEBUG:
-        impl.l.debug(message);
+        impl.l.debug("{}", message);
         break;
     case Logger::Level::TRACE:
-        impl.l.trace(message);
+        impl.l.trace("{}", message);
         break;
     }
     return;
@@ -356,8 +355,7 @@ size_t Instance::Impl::get_device_count() const noexcept
     return this->m_devices.size();
 }
 
-std::optional<Device>
-    Instance::get_device(size_t device_idx) const noexcept
+std::optional<Device> Instance::get_device(size_t device_idx) const noexcept
 {
     return Impl::cast_from(*this).get_device(device_idx);
 }

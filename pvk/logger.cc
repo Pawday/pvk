@@ -79,37 +79,37 @@ struct Logger::Detail
     }
 };
 
-void Logger::fatal(const std::string_view &message) const noexcept
+void Logger::raw_fatal(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::FATAL, message);
 }
 
-void Logger::error(const std::string_view &message) const noexcept
+void Logger::raw_error(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::ERROR, message);
 }
 
-void Logger::warning(const std::string_view &message) const noexcept
+void Logger::raw_warning(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::WARNING, message);
 }
 
-void Logger::info(const std::string_view &message) const noexcept
+void Logger::raw_info(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::INFO, message);
 }
 
-void Logger::notice(const std::string_view &message) const noexcept
+void Logger::raw_notice(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::NOTICE, message);
 }
 
-void Logger::debug(const std::string_view &message) const noexcept
+void Logger::raw_debug(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::DEBUG, message);
 }
 
-void Logger::trace(const std::string_view &message) const noexcept
+void Logger::raw_trace(const std::string_view &message) const noexcept
 {
     Detail::dispatch(this, Logger::Level::TRACE, message);
 }

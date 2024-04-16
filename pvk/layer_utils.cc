@@ -56,11 +56,11 @@ void dump_extensions_per_layer(
         max_line_size = max_line->size();
     }
 
-    l.info(box_title(label, max_line_size));
+    l.info("{}", box_title(label, max_line_size));
     for (auto &line : lines) {
-        l.info(box_entry(line, max_line_size));
+        l.info("{}", box_entry(line, max_line_size));
     }
-    l.info(box_foot(max_line_size));
+    l.info("{}", box_foot(max_line_size));
 }
 
 namespace {
@@ -72,8 +72,7 @@ std::unordered_set<std::string>
     for (auto &layer : layers) {
         std::string layer_name(layer.layerName);
         if (output.contains(layer_name)) {
-            l.warning(
-                std::format("Layer {} mentioned more than once", layer_name));
+            l.warning("Layer {} mentioned more than once", layer_name);
             continue;
         }
         output.emplace(layer_name);
@@ -92,7 +91,7 @@ std::unordered_set<std::string> collect_extensions(
         if (output.contains(ext_name)) {
             std::string dup_warn = std::format(
                 "Extention \"{}\" mentioned more than once", ext_name);
-            l.warning(dup_warn);
+            l.warning("{}", dup_warn);
             continue;
         }
         output.emplace(std::move(ext_name));
@@ -109,9 +108,9 @@ std::unordered_set<std::string> get_instance_layers(Logger &l)
         vkEnumerateInstanceLayerProperties(&nb_layers, nullptr);
 
     if (VK_SUCCESS != get_nb_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave instance layer count ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)));
+            vk_to_str(get_nb_layers_status));
         return {};
     }
 
@@ -120,9 +119,9 @@ std::unordered_set<std::string> get_instance_layers(Logger &l)
         vkEnumerateInstanceLayerProperties(&nb_layers, available_layers.data());
 
     if (VK_SUCCESS != get_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave instance layers ({}): Assume no layers",
-            vk_to_str(get_layers_status)));
+            vk_to_str(get_layers_status));
         return {};
     }
 
@@ -137,9 +136,9 @@ std::unordered_set<std::string>
         vkEnumerateDeviceLayerProperties(device, &nb_layers, nullptr);
 
     if (VK_SUCCESS != get_nb_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave device layers count ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)));
+            vk_to_str(get_nb_layers_status));
         return {};
     }
 
@@ -148,9 +147,9 @@ std::unordered_set<std::string>
         device, &nb_layers, available_layers.data());
 
     if (VK_SUCCESS != get_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave device layers ({}): Assume no layers",
-            vk_to_str(get_nb_layers_status)));
+            vk_to_str(get_nb_layers_status));
         return {};
     }
 
@@ -165,10 +164,10 @@ std::unordered_set<std::string>
         layer_name, &nb_extensions, nullptr);
 
     if (VK_SUCCESS != get_nb_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave instance layers extension count ({}): Assume no "
             "instance layers",
-            vk_to_str(get_nb_status)));
+            vk_to_str(get_nb_status));
         return {};
     }
 
@@ -177,11 +176,11 @@ std::unordered_set<std::string>
         layer_name, &nb_extensions, layer_exts.data());
 
     if (VK_SUCCESS != get_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave instance layer extensions ({}): Assume no "
             "instance "
             "layers",
-            vk_to_str(get_layers_status)));
+            vk_to_str(get_layers_status));
         return {};
     }
 
@@ -225,10 +224,10 @@ std::unordered_set<std::string> get_device_layer_extensions(
         device, layer_name, &nb_extensions, nullptr);
 
     if (VK_SUCCESS != get_nb_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave device layers extension count ({}): Assume no "
             "device layers",
-            vk_to_str(get_nb_status)));
+            vk_to_str(get_nb_status));
         return {};
     }
 
@@ -237,10 +236,10 @@ std::unordered_set<std::string> get_device_layer_extensions(
         device, layer_name, &nb_extensions, layer_exts.data());
 
     if (VK_SUCCESS != get_layers_status) {
-        l.warning(std::format(
+        l.warning(
             "Cannot retreave device layer extensions ({}): Assume no "
             "device layers",
-            vk_to_str(get_layers_status)));
+            vk_to_str(get_layers_status));
         return {};
     }
 

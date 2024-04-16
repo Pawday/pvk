@@ -86,11 +86,11 @@ bool Device::Impl::connect()
             max_line_size = max_line->size();
         }
 
-        l.info(box_title(label, max_line_size));
+        l.info("{}", box_title(label, max_line_size));
         for (auto &line : lines) {
-            l.info(box_entry(line, max_line_size));
+            l.info("{}", box_entry(line, max_line_size));
         }
-        l.info(box_foot(max_line_size));
+        l.info("{}", box_foot(max_line_size));
     }
 
     auto enabled_layer_names =
@@ -105,6 +105,7 @@ bool Device::Impl::connect()
         return false;
     }
 
+#pragma message "Resolve temp"
     utils::StringPack::create(std::span(enabled_layers))->get();
 
     std::vector<VkQueueFamilyProperties> families = get_queue_families();
@@ -142,8 +143,8 @@ bool Device::Impl::connect()
         &new_logical_device);
 
     if (VK_SUCCESS != create_device_status) {
-        l.warning(std::format(
-            "Device connection failue: {}", vk_to_str(create_device_status)));
+        l.warning(
+            "Device connection failue: {}", vk_to_str(create_device_status));
         return false;
     }
 
@@ -194,7 +195,7 @@ DeviceType Device::Impl::get_device_type()
     case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
     case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
     case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-        l.debug(std::format("Vk GPU type: {}", gpu_type));
+        l.debug("Vk GPU type: {}", gpu_type);
         return DeviceType::GPU;
     case VK_PHYSICAL_DEVICE_TYPE_CPU:
         return DeviceType::CPU;

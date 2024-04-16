@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include <new>
 #include <optional>
 #include <pvk/pipeline.hh>
 #include <utility>
@@ -54,12 +55,12 @@ struct Pipeline::Impl
 
     static Impl &cast_from(std::byte *data)
     {
-        return *reinterpret_cast<Impl *>(data);
+        return *std::launder(reinterpret_cast<Impl *>(data));
     }
 
     static Impl const &cast_from(std::byte const *data)
     {
-        return *reinterpret_cast<Impl const *>(data);
+        return *std::launder(reinterpret_cast<Impl const *>(data));
     }
 
     static bool assert_size()

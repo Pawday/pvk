@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <new>
 #include <optional>
 #include <string>
 #include <utility>
@@ -59,12 +60,12 @@ struct alignas(Device) Device::Impl
 
     static Impl &cast_from(Device &device)
     {
-        return *reinterpret_cast<Impl *>(device.impl);
+        return *std::launder(reinterpret_cast<Impl *>(device.impl));
     }
 
     static Impl const &cast_from(Device const &device)
     {
-        return *reinterpret_cast<Impl const *>(device.impl);
+        return *std::launder(reinterpret_cast<Impl const *>(device.impl));
     }
 
     static bool assert_size()

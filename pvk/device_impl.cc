@@ -228,29 +228,31 @@ Device &Device::operator=(Device &&o) noexcept
     return *this;
 }
 
+#define IMPL Impl::cast_from(*this)
+
 Device::~Device() noexcept
 {
-    Impl::cast_from(*this).~Impl();
+    IMPL.~Impl();
 }
 
 std::string Device::get_name()
 {
-    return Impl::cast_from(*this).get_name();
+    return IMPL.get_name();
 }
 
 DeviceType Device::get_device_type()
 {
-    return Impl::cast_from(*this).get_device_type();
+    return IMPL.get_device_type();
 }
 
 bool Device::connect()
 {
-    return Impl::cast_from(*this).connect();
+    return IMPL.connect();
 }
 
 bool Device::connected() const
 {
-    return Impl::cast_from(*this).connected();
+    return IMPL.connected();
 }
 
 } // namespace pvk

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <new>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -31,12 +32,12 @@ struct alignas(Instance) Instance::Impl
 
     static Impl &cast_from(Instance &inst)
     {
-        return *reinterpret_cast<Impl *>(inst.impl);
+        return *std::launder(reinterpret_cast<Impl *>(inst.impl));
     }
 
     static Impl const &cast_from(Instance const &inst)
     {
-        return *reinterpret_cast<Impl const *>(inst.impl);
+        return *std::launder(reinterpret_cast<Impl const *>(inst.impl));
     }
 
     bool load_devices();

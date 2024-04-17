@@ -7,6 +7,10 @@
 static inline std::string vk_to_str(VkResult res)
 {
     switch (res) {
+
+    case VK_RESULT_MAX_ENUM:
+        return "VK_RESULT_MAX_ENUM";
+
     case VK_SUCCESS:
         return "VK_SUCCESS";
     case VK_NOT_READY:
@@ -55,8 +59,6 @@ static inline std::string vk_to_str(VkResult res)
         return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
     case VK_PIPELINE_COMPILE_REQUIRED:
         return "VK_PIPELINE_COMPILE_REQUIRED";
-    case VK_RESULT_MAX_ENUM:
-        return "VK_RESULT_MAX_ENUM";
         break;
     }
 

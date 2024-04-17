@@ -86,7 +86,7 @@ void raw_notice(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix =
-        std::format("{}[NOTE ]{}", ansi_color(0xca, 0xfa, 0xee), ansi_reset());
+        std::format("{}[NOTE ]{}", ansi_color(0x70, 0xcb, 0xff), ansi_reset());
     log_lines_to(std::cout, prefix, message, lines);
 } catch (...) {
 }

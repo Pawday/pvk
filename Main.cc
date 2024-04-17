@@ -30,7 +30,7 @@ static std::optional<Loader> load_vulkan(int argc, char const *const *argv)
     } else {
         vk_dso_location = argv[1];
         std::cout << std::format(
-            "[INFO]: Loading alternative Vulkan library from \"{}\n",
+            "[INFO]: Loading alternative Vulkan library from \"{}\"\n",
             vk_dso_location);
     }
     return Loader::load(vk_dso_location);

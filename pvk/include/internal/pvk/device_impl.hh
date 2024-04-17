@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <new>
-#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -15,6 +14,7 @@
 #include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
+#include "pvk/layer_utils.hh"
 #include "pvk/vk_allocator.hh"
 #include "pvk/vk_api.hh"
 
@@ -29,6 +29,8 @@ struct alignas(Device) Device::Impl
     }
 
     void disconnect();
+
+    Impl(VkPhysicalDevice &&device) noexcept;
 
     ~Impl()
     {
@@ -122,8 +124,6 @@ struct alignas(Device) Device::Impl
     }
 
     DeviceType get_device_type();
-
-    Impl(VkPhysicalDevice &&device) noexcept;
 
   private:
     Logger l;

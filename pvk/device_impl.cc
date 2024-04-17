@@ -1,5 +1,8 @@
 #include <algorithm>
+#include <bitset>
 #include <format>
+#include <iterator>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <span>
@@ -17,13 +20,23 @@
 #include <pvk/vk_allocator.hh>
 
 #include "pvk/device_impl.hh"
+#include "pvk/device_queue_string.hh"
 #include "pvk/layer_utils.hh"
 #include "pvk/log_utils.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 #include "pvk/vk_api.hh"
 
+constexpr float DEFAULT_QUEUE_PRIORITY = 1.0;
+
+#define IMPL Impl::cast_from(*this)
+
 namespace pvk {
+
+bool Device::connect()
+{
+    return IMPL.connect();
+}
 
 bool Device::Impl::connect()
 {
@@ -72,10 +85,7 @@ bool Device::Impl::connect()
         std::vector<std::string> lines;
         lines.reserve(full_extesions_list.size());
 
-        for (auto &ext : full_extesions_list) {
-            lines.emplace_back(ext);
-        }
-
+        std::ranges::copy(full_extesions_list, std::back_inserter(lines));
         std::ranges::sort(lines);
 
         auto max_line = std::ranges::max_element(
@@ -96,7 +106,6 @@ bool Device::Impl::connect()
     auto enabled_layer_names =
         utils::StringPack::create(std::span(enabled_layers));
 
-    auto enabled_layers_names_ptrs = enabled_layer_names->get();
     auto enabled_ext_names =
         utils::StringPack::create(std::span(enabled_extensions));
     if (!enabled_layer_names || !enabled_ext_names) {
@@ -104,36 +113,106 @@ bool Device::Impl::connect()
             "Device connection failue: No host memory for connection info");
         return false;
     }
+    auto enabled_layers_names_ptrs = enabled_layer_names->get();
+    auto enabled_extension_names_ptrs = enabled_ext_names->get();
 
 #pragma message "Resolve temp"
     utils::StringPack::create(std::span(enabled_layers))->get();
 
     std::vector<VkQueueFamilyProperties> families = get_queue_families();
     if (families.size() == 0) {
-        l.warning("No single queue family to configure from");
-        return false;
+        l.warning("No single queue family (WAT?)");
     }
 
-    size_t q_idx = 0;
-    size_t nb_queues = 1;
-    std::vector<float> priors;
-    priors.resize(nb_queues);
-    std::ranges::fill(priors, 1.0f);
+    VkDeviceQueueCreateInfo empty_q_create_info{};
+    empty_q_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    std::vector<VkDeviceQueueCreateInfo> q_create_infos;
+    q_create_infos.resize(families.size());
 
-    VkDeviceQueueCreateInfo main_queue{};
-    main_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    main_queue.queueCount = nb_queues;
-    main_queue.queueFamilyIndex = q_idx;
-    main_queue.pQueuePriorities = priors.data();
+    std::vector<std::vector<float>> q_create_infos_priors_storage;
+    q_create_infos_priors_storage.resize(families.size());
+
+    for (size_t q_fam_idx = 0; q_fam_idx < families.size(); q_fam_idx++) {
+        auto &family = families[q_fam_idx];
+        if (family.queueCount == 0) {
+            l.warning("No single queue in Queue family #{}", q_fam_idx);
+            continue;
+        }
+
+        auto raw_flags = family.queueFlags;
+
+        std::string queue_idx_title = std::format(
+            "Queue family #{} ({} {})",
+            q_fam_idx,
+            family.queueCount,
+            family.queueCount == 1 ? "queue" : "queues");
+        std::string queue_flags_str = "Raw flags: 0b" +
+            std::bitset<sizeof(raw_flags) * 8>(raw_flags).to_string();
+
+        auto extract_flags =
+            [](decltype(raw_flags) flags) -> std::vector<std::string> {
+            std::vector<std::string> output;
+
+            constexpr auto bits = std::numeric_limits<decltype(flags)>::digits;
+            for (size_t bit_idx = 0; bit_idx < bits; bit_idx++) {
+                size_t bit_mask = 1;
+                bit_mask <<= bit_idx;
+                VkQueueFlagBits bit =
+                    static_cast<VkQueueFlagBits>(flags & bit_mask);
+                if (bit == 0) {
+                    continue;
+                }
+                output.emplace_back(
+                    std::format("bit {} - {}", bit_idx, vk_to_str(bit)));
+            }
+            return output;
+        };
+
+        size_t max_string =
+            std::max(queue_flags_str.size(), queue_idx_title.size());
+
+        std::vector<std::string> flags_strlist = extract_flags(raw_flags);
+
+        auto max_flag_str = std::ranges::max_element(
+            flags_strlist,
+            [](const auto &l, const auto &r) { return l.size() < r.size(); });
+        if (std::end(flags_strlist) != max_flag_str) {
+            max_string = std::max(max_string, max_flag_str->size());
+        }
+
+        l.info("{}", box_title(queue_idx_title, max_string));
+        l.info("{}", box_entry(queue_flags_str, max_string));
+        for (auto &flag_str : flags_strlist) {
+            l.info("{}", box_entry(flag_str, max_string));
+        }
+        l.info("{}", box_foot(max_string));
+
+        std::vector<std::string> q_info_box;
+    }
+
+    std::ranges::fill(q_create_infos, empty_q_create_info);
+    for (size_t q_fam_idx = 0; q_fam_idx < families.size(); q_fam_idx++) {
+        VkQueueFamilyProperties &q_fam_props = families[q_fam_idx];
+        VkDeviceQueueCreateInfo &q_create_info = q_create_infos[q_fam_idx];
+        q_create_info.queueFamilyIndex = q_fam_idx;
+        q_create_info.queueCount = q_fam_props.queueCount;
+        q_create_info.flags = 0;
+        auto &q_priors = q_create_infos_priors_storage[q_fam_idx];
+        q_priors.resize(q_create_info.queueCount);
+        std::ranges::fill(q_priors, DEFAULT_QUEUE_PRIORITY);
+        q_create_info.pQueuePriorities = q_priors.data();
+    }
 
     VkDeviceCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     VkPhysicalDeviceFeatures device_features{};
     create_info.pEnabledFeatures = &device_features;
-    create_info.pQueueCreateInfos = &main_queue;
-    create_info.queueCreateInfoCount = 1;
+    create_info.pQueueCreateInfos = q_create_infos.data();
+    create_info.queueCreateInfoCount = q_create_infos.size();
     create_info.ppEnabledLayerNames = enabled_layers_names_ptrs.data();
     create_info.enabledLayerCount = enabled_layers_names_ptrs.size();
+    create_info.enabledExtensionCount = enabled_extension_names_ptrs.size();
+    create_info.ppEnabledExtensionNames = enabled_extension_names_ptrs.data();
 
     VkDevice new_logical_device = VK_NULL_HANDLE;
     VkResult create_device_status = vkCreateDevice(
@@ -166,6 +245,11 @@ void Device::Impl::disconnect()
         vkDestroyDevice(m_device, nullptr);
     }
     m_device = VK_NULL_HANDLE;
+}
+
+DeviceType Device::get_device_type()
+{
+    return IMPL.get_device_type();
 }
 
 DeviceType Device::Impl::get_device_type()
@@ -228,8 +312,6 @@ Device &Device::operator=(Device &&o) noexcept
     return *this;
 }
 
-#define IMPL Impl::cast_from(*this)
-
 Device::~Device() noexcept
 {
     IMPL.~Impl();
@@ -238,16 +320,6 @@ Device::~Device() noexcept
 std::string Device::get_name()
 {
     return IMPL.get_name();
-}
-
-DeviceType Device::get_device_type()
-{
-    return IMPL.get_device_type();
-}
-
-bool Device::connect()
-{
-    return IMPL.connect();
 }
 
 bool Device::connected() const

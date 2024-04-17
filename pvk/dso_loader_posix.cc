@@ -38,7 +38,7 @@ std::optional<SymLoader> SymLoader::load(const std::string &library_file)
     char *load_status = dlerror();
     if (load_status != NULL) {
         pvk::warning(
-            "Failue loading library from: \"{}\" reason \"{}\"\n",
+            "Failue loading library from: \"{}\" reason \"{}\"",
             library_file,
             load_status);
         return std::nullopt;

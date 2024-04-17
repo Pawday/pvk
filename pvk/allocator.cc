@@ -38,7 +38,7 @@ static void
 
     PVK_TRACE(
         "Driver requested undivisibly {} "
-        "bytes by alignment {}, allocating {} bytes instead\n",
+        "bytes by alignment {}, allocating {} bytes instead",
         size,
         alignment,
         aligned_size);

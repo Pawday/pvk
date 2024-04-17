@@ -30,7 +30,7 @@ static std::optional<Loader> load_vulkan(int argc, char const *const *argv)
     } else {
         vk_dso_location = argv[1];
         std::cout << std::format(
-            "[INFO]: Loading alternative Vulkan library from \"{}\"\n",
+            "[INFO]: Loading alternative Vulkan library from \"{}\n",
             vk_dso_location);
     }
     return Loader::load(vk_dso_location);
@@ -98,14 +98,15 @@ Application::Application()
     std::cout << std::format("Found {} devices\n", devices_count);
 
     for (size_t device_idx = 0; device_idx < devices_count; device_idx++) {
-        std::optional<Device> device_ctx =
-            m_vk_context->get_device(device_idx);
+        std::optional<Device> device = m_vk_context->get_device(device_idx);
 
         std::cout << std::format(
             "Device #{} - {} ({})\n",
             device_idx,
-            device_ctx->get_name(),
-            device_type_to_str(device_ctx->get_device_type()));
+            device->get_name(),
+            device_type_to_str(device->get_device_type()));
+
+        device->connect();
     }
 }
 

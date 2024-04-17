@@ -61,7 +61,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     std::optional<SymLoader> vk_library = SymLoader::load(library);
     if (!vk_library) {
-        pvk::warning("Load shared Vulkan library \"{}\" failed\n", library);
+        pvk::warning("Load shared Vulkan library \"{}\" failed", library);
         return std::nullopt;
     }
 
@@ -81,7 +81,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     if (std::numeric_limits<VKVersion::Major_t>::max() < vulkan_version_maj) {
         pvk::warning(
-            "Actual major version of vulkan is {}\n", vulkan_version_maj);
+            "Actual major version of vulkan is {}", vulkan_version_maj);
         version.major = std::numeric_limits<VKVersion::Major_t>::max();
     } else {
         version.major = vulkan_version_maj;
@@ -89,7 +89,7 @@ std::optional<Loader> Loader::load(const std::string &library) noexcept
 
     if (std::numeric_limits<VKVersion::Minor_t>::max() < vulkan_version_min) {
         pvk::warning(
-            "Actual minor version of vulkan is {}\n", vulkan_version_min);
+            "Actual minor version of vulkan is {}", vulkan_version_min);
         version.minor = std::numeric_limits<VKVersion::Minor_t>::max();
     } else {
         version.minor = vulkan_version_min;

@@ -31,6 +31,8 @@
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
 
+#define IMPL Impl::cast_from(*this)
+
 namespace pvk {
 
 Instance::Instance(Instance::Impl &&impl_obj) noexcept
@@ -46,7 +48,7 @@ Instance &Instance::operator=(Instance &&other) noexcept
 
 Instance::~Instance() noexcept
 {
-    Impl::cast_from(*this).~Impl();
+    IMPL.~Impl();
 }
 
 Instance::Impl::~Impl() noexcept
@@ -348,7 +350,7 @@ Instance::Impl::Impl(Instance::Impl &&other) noexcept
 
 size_t Instance::get_device_count() const noexcept
 {
-    return Impl::cast_from(*this).get_device_count();
+    return IMPL.get_device_count();
 }
 size_t Instance::Impl::get_device_count() const noexcept
 {
@@ -357,7 +359,7 @@ size_t Instance::Impl::get_device_count() const noexcept
 
 std::optional<Device> Instance::get_device(size_t device_idx) const noexcept
 {
-    return Impl::cast_from(*this).get_device(device_idx);
+    return IMPL.get_device(device_idx);
 }
 
 std::optional<Device>

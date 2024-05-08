@@ -8,6 +8,8 @@
 
 namespace pvk {
 
+struct Instance;
+
 enum class DeviceType
 {
     UNKNOWN,
@@ -31,12 +33,13 @@ struct PVK_API alignas(std::max_align_t) Device
     Device(Device const &) = delete;
     Device &operator=(Device const &) = delete;
 
-    struct Impl;
-    Device(Impl &&) noexcept;
-
   private:
     static constexpr size_t impl_size = 1024;
     std::byte impl[impl_size];
+    struct Impl;
+    Device(Impl &&) noexcept;
+
+    friend struct Instance;
 };
 
 } // namespace pvk

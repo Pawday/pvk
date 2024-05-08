@@ -4,8 +4,9 @@
 
 #include <cstddef>
 
-#include <pvk/device.hh>
 #include <pvk/symvis.hh>
+
+#include <pvk/device.hh>
 
 namespace pvk {
 

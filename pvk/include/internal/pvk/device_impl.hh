@@ -18,6 +18,8 @@
 #include "pvk/vk_allocator.hh"
 #include "pvk/vk_api.hh"
 
+#define IMPL Impl::cast_from(*this)
+
 namespace pvk {
 
 struct alignas(Device) Device::Impl

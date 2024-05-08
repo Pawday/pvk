@@ -35,8 +35,7 @@ static void aligned_free_wrap(void *p)
 static void
     warn_memsize_align(size_t size, size_t alignment, size_t aligned_size)
 {
-
-    PVK_TRACE(
+    pvk::warning(
         "Driver requested undivisibly {} "
         "bytes by alignment {}, allocating {} bytes instead",
         size,

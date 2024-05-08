@@ -22,6 +22,7 @@
 #include "pvk/device_impl.hh"
 #include "pvk/device_queue_string.hh"
 #include "pvk/layer_utils.hh"
+#include "pvk/log.hh"
 #include "pvk/log_utils.hh"
 #include "pvk/result.hh"
 #include "pvk/string_pack.hh"
@@ -71,7 +72,7 @@ bool Device::Impl::connect()
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        l.warning("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
     }
 #endif
 
@@ -116,9 +117,6 @@ bool Device::Impl::connect()
     auto enabled_layers_names_ptrs = enabled_layer_names->get();
     auto enabled_extension_names_ptrs = enabled_ext_names->get();
 
-#pragma message "Resolve temp"
-    utils::StringPack::create(std::span(enabled_layers))->get();
-
     std::vector<VkQueueFamilyProperties> families = get_queue_families();
     if (families.size() == 0) {
         l.warning("No single queue family (WAT?)");
@@ -139,7 +137,7 @@ bool Device::Impl::connect()
             continue;
         }
 
-        auto raw_flags = family.queueFlags;
+        VkQueueFlags raw_flags = family.queueFlags;
 
         std::string queue_idx_title = std::format(
             "Queue family #{} ({} {})",
@@ -147,7 +145,8 @@ bool Device::Impl::connect()
             family.queueCount,
             family.queueCount == 1 ? "queue" : "queues");
         std::string queue_flags_str = "Raw flags: 0b" +
-            std::bitset<sizeof(raw_flags) * 8>(raw_flags).to_string();
+            std::bitset<std::numeric_limits<VkQueueFlags>::digits>(raw_flags)
+                .to_string();
 
         auto extract_flags =
             [](decltype(raw_flags) flags) -> std::vector<std::string> {

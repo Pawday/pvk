@@ -55,7 +55,7 @@ void trace(std::format_string<Args...> fmt, Args &&...args) noexcept
     raw_trace(std::vformat(fmt.get(), std::make_format_args(args...)));
 }
 
-#define PVK_TRACE(message)                                                     \
-    pvk::trace(std::format(" {}:{} {}", __FILE_NAME__, __LINE__, message))
+#define PVK_TRACE(FORMAT, ...)                                                 \
+    pvk::trace(" {}:{} " FORMAT, __FILE_NAME__, __LINE__, ##__VA_ARGS__)
 
 } // namespace pvk

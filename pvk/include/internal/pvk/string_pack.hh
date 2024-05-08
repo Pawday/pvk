@@ -61,10 +61,9 @@ struct StringPack
     ~StringPack() = default;
 
 
-    std::vector<const char *> get() const&& = delete;
     std::vector<const char *> get() && = delete;
 
-    std::vector<const char *> get() const&
+    std::vector<const char *> get() &
     {
         std::vector<const char *> output;
         output.reserve(offsets.size());

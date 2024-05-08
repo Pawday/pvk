@@ -45,21 +45,21 @@ CONSTEXPR_IF_CLANG std::string ansi_reset()
 void log_lines_to(
     std::ostream &stream,
     const std::string_view prefix,
+    const std::string_view suffix,
     const std::string_view &message,
     const std::vector<Segment> &segments)
 {
     for (auto segment : segments) {
         std::string_view line(message.data() + segment.start, segment.size);
-        stream << std::format("{}{}\n", prefix, line);
+        stream << std::format("{}{}{}\n", prefix, line, suffix);
     }
 }
 
 void raw_fatal(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
-    std::string prefix = std::format("{}[FATAL]", ansi_color(0xee, 0, 0));
-    log_lines_to(std::cout, prefix, message, lines);
-    ansi_reset();
+    std::string prefix = std::format("{}[F]", ansi_color(0xee, 0, 0));
+    log_lines_to(std::cout, prefix, ansi_reset(), message, lines);
 } catch (...) {
 }
 
@@ -67,8 +67,8 @@ void raw_error(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix =
-        std::format("{}[ERROR]{}", ansi_color(0xff, 0, 0), ansi_reset());
-    log_lines_to(std::cout, prefix, message, lines);
+        std::format("{}[E]{}", ansi_color(0xff, 0, 0), ansi_reset());
+    log_lines_to(std::cout, prefix, message, "", lines);
 } catch (...) {
 }
 
@@ -77,8 +77,8 @@ try {
     auto lines = split_ln(message);
 
     std::string prefix =
-        std::format("{}[WARN ]{}", ansi_color(0xf6, 0xff, 0x00), ansi_reset());
-    log_lines_to(std::cout, prefix, message, lines);
+        std::format("{}[W]{}", ansi_color(0xf6, 0xff, 0x00), ansi_reset());
+    log_lines_to(std::cout, prefix, "", message, lines);
 } catch (...) {
 }
 
@@ -86,24 +86,23 @@ void raw_notice(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix =
-        std::format("{}[NOTE ]{}", ansi_color(0x70, 0xcb, 0xff), ansi_reset());
-    log_lines_to(std::cout, prefix, message, lines);
+        std::format("{}[N]{}", ansi_color(0x70, 0xcb, 0xff), ansi_reset());
+    log_lines_to(std::cout, prefix, "", message, lines);
 } catch (...) {
 }
 
 void raw_info(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
-    log_lines_to(std::cout, "[INFO ]", message, lines);
+    log_lines_to(std::cout, "[I]", "", message, lines);
 } catch (...) {
 }
 
 void raw_debug(const std::string_view &message) noexcept
 try {
-    std::string prefix =
-        std::format("{}[DEBUG]{}", ansi_color(0x2e, 0x55, 0xff), ansi_reset());
+    std::string prefix = std::format("{}[D]", ansi_color(0x2e, 0x55, 0xff));
     auto lines = split_ln(message);
-    log_lines_to(std::cout, prefix, message, lines);
+    log_lines_to(std::cout, prefix, ansi_reset(), message, lines);
 } catch (...) {
 }
 
@@ -111,8 +110,8 @@ void raw_trace(const std::string_view &message) noexcept
 try {
     auto lines = split_ln(message);
     std::string prefix_mangled =
-        std::format("{}[TRACE]{}", ansi_color(0x00, 0x55, 0x00), ansi_reset());
-    log_lines_to(std::cout, prefix_mangled, message, lines);
+        std::format("{}[T]", ansi_color(0x00, 0xff, 0x00));
+    log_lines_to(std::cout, prefix_mangled, ansi_reset(), message, lines);
 } catch (...) {
 }
 

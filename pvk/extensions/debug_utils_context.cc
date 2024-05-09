@@ -5,9 +5,9 @@
 #include <pvk/extensions/debug_utils_context.hh>
 
 #include <pvk/log.hh>
-#include <pvk/vk_allocator.hh>
 
-#include "pvk/result.hh"
+#include "pvk/internal/vk_allocator.hh"
+#include "pvk/internal/result.hh"
 
 namespace pvk {
 

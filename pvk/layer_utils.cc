@@ -11,10 +11,10 @@
 
 #include <pvk/logger.hh>
 
-#include "pvk/layer_utils.hh"
-#include "pvk/log_utils.hh"
-#include "pvk/result.hh"
-#include "pvk/vk_api.hh"
+#include "pvk/internal/layer_utils.hh"
+#include "pvk/internal/log_utils.hh"
+#include "pvk/internal/result.hh"
+#include "pvk/internal/vk_api.hh"
 
 namespace pvk {
 

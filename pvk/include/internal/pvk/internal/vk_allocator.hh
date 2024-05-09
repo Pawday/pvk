@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-#include "pvk/vk_api.hh"
+#include "pvk/internal/vk_api.hh"
 
 namespace pvk {
 

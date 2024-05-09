@@ -10,7 +10,7 @@
 
 #include <vk_platform.h>
 
-#include <pvk/vk_api.hh>
+#include "pvk/internal/vk_api.hh"
 
 #define VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT 1000128000
 #define VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT 1000128001

@@ -10,7 +10,8 @@
 
 #include <pvk/extensions/debug_utils.hh>
 #include <pvk/logger.hh>
-#include <pvk/vk_allocator.hh>
+
+#include "pvk/internal/vk_allocator.hh"
 
 namespace pvk {
 

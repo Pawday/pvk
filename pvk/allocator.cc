@@ -8,9 +8,9 @@
 #include <corecrt_malloc.h>
 #endif
 
-#include "pvk/vk_allocator.hh"
-
 #include "pvk/log.hh"
+
+#include "pvk/internal/vk_allocator.hh"
 
 namespace {
 static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)

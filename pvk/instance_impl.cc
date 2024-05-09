@@ -16,20 +16,20 @@
 #include <pvk/instance.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
-#include <pvk/vk_allocator.hh>
-#include <pvk/vk_api.hh>
 
 #if defined(PVK_USE_EXT_DEBUG_UTILS)
 #include <pvk/extensions/debug_utils.hh>
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
-#include "pvk/device_impl.hh"
-#include "pvk/instance_impl.hh"
-#include "pvk/layer_utils.hh"
-#include "pvk/log_utils.hh"
-#include "pvk/result.hh"
-#include "pvk/string_pack.hh"
+#include "pvk/internal/vk_api.hh"
+#include "pvk/internal/vk_allocator.hh"
+#include "pvk/internal/device_impl.hh"
+#include "pvk/internal/instance_impl.hh"
+#include "pvk/internal/layer_utils.hh"
+#include "pvk/internal/log_utils.hh"
+#include "pvk/internal/result.hh"
+#include "pvk/internal/string_pack.hh"
 
 #define IMPL Impl::cast_from(*this)
 

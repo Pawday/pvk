@@ -6,8 +6,9 @@
 #include <string_view>
 #include <vector>
 
-#include "pvk/log.hh"
-#include "pvk/log_utils.hh"
+#include <pvk/log.hh>
+
+#include "pvk/internal/log_utils.hh"
 
 #if defined(__clang__)
 #define CONSTEXPR_IF_CLANG constexpr

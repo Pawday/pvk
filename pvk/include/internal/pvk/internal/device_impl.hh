@@ -14,9 +14,9 @@
 #include <pvk/instance.hh>
 #include <pvk/logger.hh>
 
-#include "pvk/layer_utils.hh"
-#include "pvk/vk_allocator.hh"
-#include "pvk/vk_api.hh"
+#include "pvk/internal/layer_utils.hh"
+#include "pvk/internal/vk_allocator.hh"
+#include "pvk/internal/vk_api.hh"
 
 #define IMPL Impl::cast_from(*this)
 

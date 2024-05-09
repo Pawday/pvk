@@ -7,7 +7,7 @@
 
 #include <pvk/logger.hh>
 
-#include "pvk/vk_api.hh"
+#include "pvk/internal/vk_api.hh"
 
 using LayerExtMap =
     std::unordered_map<std::string, std::unordered_set<std::string>>;

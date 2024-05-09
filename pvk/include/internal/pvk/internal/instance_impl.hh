@@ -15,8 +15,8 @@
 #include <pvk/extensions/debug_utils_context.hh>
 #endif
 
-#include "pvk/vk_allocator.hh"
-#include "pvk/vk_api.hh"
+#include "pvk/internal/vk_allocator.hh"
+#include "pvk/internal/vk_api.hh"
 
 namespace pvk {
 struct alignas(Instance) Instance::Impl

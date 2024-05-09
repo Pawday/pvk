@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-#include "pvk/log_utils.hh"
+#include "pvk/internal/log_utils.hh"
 
 #define ANSI_BOX
 

@@ -72,7 +72,7 @@ bool Device::Impl::connect()
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not available");
     }
 #endif
 

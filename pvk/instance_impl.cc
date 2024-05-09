@@ -106,7 +106,7 @@ std::optional<Instance> Instance::Impl::create()
         l.info("Layer \"VK_LAYER_KHRONOS_validation\" is enabled");
         enabled_layers.emplace_back("VK_LAYER_KHRONOS_validation");
     } else {
-        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not supported");
+        l.notice("Layer \"VK_LAYER_KHRONOS_validation\" is not available");
     }
 #endif
     if (full_extesions_list.size() != 0) {
@@ -142,7 +142,7 @@ std::optional<Instance> Instance::Impl::create()
     if (has_debug_utils) {
         enabled_extensions.emplace_back("VK_EXT_debug_utils");
     } else {
-        l.notice("VK_EXT_debug_utils extension is not supported: Ignore");
+        l.notice("VK_EXT_debug_utils extension is not available: Ignore");
     }
 
     if (has_debug_utils) {

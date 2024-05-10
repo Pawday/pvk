@@ -59,14 +59,14 @@ SymLoader::SymLoader(SymLoader &&other) noexcept
     other.m_handle = nullptr;
 }
 
-std::optional<void *> SymLoader::load_sym(const std::string &symname)
+std::optional<SymLoader::PFN> SymLoader::load_func(const std::string &symname)
 {
     char *preload_error = dlerror();
     if (preload_error != NULL) {
         log_preload_error(preload_error);
     }
 
-    void *new_sym = dlsym(m_handle, symname.c_str());
+    PFN new_sym = reinterpret_cast<PFN>(dlsym(m_handle, symname.c_str()));
     char *symload_status = dlerror();
     if (symload_status != NULL) {
         return std::nullopt;

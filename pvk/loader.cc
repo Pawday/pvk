@@ -33,7 +33,7 @@ static GLADapiproc load_vk_proc(void *library, const char *vk_proc_name)
 {
     pvk::SymLoader *vk_library = reinterpret_cast<pvk::SymLoader *>(library);
 
-    auto proc_addres = vk_library->load_sym(vk_proc_name);
+    auto proc_addres = vk_library->load_func(vk_proc_name);
     if (!proc_addres) {
         pvk::error("Fail to load Vulkan function {}\n", vk_proc_name);
         return NULL;

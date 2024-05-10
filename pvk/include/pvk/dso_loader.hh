@@ -20,7 +20,10 @@ struct SymLoader
         return *this;
     }
 
-    std::optional<void *> load_sym(const std::string &symname);
+    // Pointer to FuNction
+    using PFN = void (*)(void);
+
+    std::optional<PFN> load_func(const std::string &symname);
 
   private:
     SymLoader();

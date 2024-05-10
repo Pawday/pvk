@@ -59,10 +59,10 @@ SymLoader::SymLoader(SymLoader &&other) noexcept
     other.m_handle = nullptr;
 }
 
-std::optional<void *> SymLoader::load_sym(const std::string &symname)
+std::optional<SymLoader::PFN> SymLoader::load_func(const std::string &symname)
 {
-    auto *new_sym =
-        GetProcAddress(reinterpret_cast<HMODULE>(m_handle), symname.c_str());
+    auto *new_sym = reinterpret_cast<PFN>(
+        GetProcAddress(reinterpret_cast<HMODULE>(m_handle), symname.c_str()));
     if (new_sym == NULL) {
         return std::nullopt;
     }

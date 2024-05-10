@@ -4,5 +4,5 @@ function(target_strict_compilation TARGET)
         return()
     endif()
 
-    target_compile_options(${TARGET} PRIVATE "-Wall" "-Wextra" "-Wshadow" "-Werror")
+    target_compile_options(${TARGET} PRIVATE "-Wall" "-Wextra" "-Wshadow" "-Werror" "-pedantic")
 endfunction()

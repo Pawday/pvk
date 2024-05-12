@@ -50,8 +50,20 @@ set_property(TARGET pvk.allocator PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(pvk.allocator PRIVATE pvk.headers pvk.headers.internal)
 target_pvk_options(pvk.allocator)
 
+
+set(PVK_USE_WINDOWS_ALIGNED_ALLOC_DEFAULT OFF)
 if(WIN32)
-    target_compile_definitions(pvk.allocator PRIVATE USE_WINDOWS_ALIGNED_ALLOC)
+    set(PVK_USE_WINDOWS_ALIGNED_ALLOC_DEFAULT ON)
+endif()
+
+option(PVK_USE_WINDOWS_ALIGNED_ALLOC
+    "Use win32 _aligned_malloc and _aligned_free because you cannot use std::aligned_alloc"
+    ${PVK_USE_WINDOWS_ALIGNED_ALLOC_DEFAULT}
+)
+set_property(CACHE PVK_USE_WINDOWS_ALIGNED_ALLOC PROPERTY ADVANCED TRUE)
+
+if(PVK_USE_WINDOWS_ALIGNED_ALLOC)
+    target_compile_definitions(pvk.allocator PRIVATE PVK_USE_WINDOWS_ALIGNED_ALLOC)
 endif()
 
 if (PVK_ALLOCATOR_ENABLE_ALIGN_MISMATCH_DEBUG)
@@ -74,10 +86,28 @@ target_sources(pvk.objects PRIVATE
     pipeline.cc
 )
 
+
 if(WIN32)
-    target_sources(pvk.objects PRIVATE dso_loader_win32.cc)
+    set(PVK_DSO_IMPLEMENTATION_DEFAULT "WINAPI")
+elseif(UNIX)
+    set(PVK_DSO_IMPLEMENTATION_DEFAULT "POSIX_DLFCN")
 else()
+    set(PVK_DSO_IMPLEMENTATION_DEFAULT "")
+endif()
+
+set(PVK_DSO_IMPLEMENTATION ${PVK_DSO_IMPLEMENTATION_DEFAULT} CACHE STRING "DSO loader implementation")
+set_property(CACHE PVK_DSO_IMPLEMENTATION PROPERTY ADVANCED TRUE)
+set_property(CACHE PVK_DSO_IMPLEMENTATION PROPERTY STRINGS
+    "WINAPI"
+    "POSIX_DLFCN"
+)
+
+if(PVK_DSO_IMPLEMENTATION STREQUAL "WINAPI")
+    target_sources(pvk.objects PRIVATE dso_loader_win32.cc)
+elseif(PVK_DSO_IMPLEMENTATION STREQUAL "POSIX_DLFCN")
     target_sources(pvk.objects PRIVATE dso_loader_posix.cc)
+else()
+    message(FATAL_ERROR "Unknown PVK_DSO_IMPLEMENTATION \"${PVK_DSO_IMPLEMENTATION}\"")
 endif()
 
 if (PVK_ANY_OF_EXTENSIONS_IN_USE)

@@ -4,10 +4,6 @@
 #include <format>
 #include <iterator>
 
-#if defined(USE_WINDOWS_ALIGNED_ALLOC)
-#include <corecrt_malloc.h>
-#endif
-
 #include "pvk/log.hh"
 
 #include "pvk/internal/vk_allocator.hh"
@@ -15,7 +11,7 @@
 namespace {
 static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)
 {
-#if defined(USE_WINDOWS_ALIGNED_ALLOC)
+#if defined(PVK_USE_WINDOWS_ALIGNED_ALLOC)
     return _aligned_malloc(aligned_size, alignment);
 #else
     return std::aligned_alloc(alignment, aligned_size);
@@ -24,7 +20,7 @@ static void *aligned_alloc_wrap(size_t alignment, size_t aligned_size)
 
 static void aligned_free_wrap(void *p)
 {
-#if defined(USE_WINDOWS_ALIGNED_ALLOC)
+#if defined(PVK_USE_WINDOWS_ALIGNED_ALLOC)
     _aligned_free(p);
 #else
     free(p);

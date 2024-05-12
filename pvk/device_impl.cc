@@ -4,35 +4,132 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 #include <pvk/device.hh>
 #include <pvk/instance.hh>
 #include <pvk/log.hh>
 #include <pvk/logger.hh>
 
-#include "pvk/internal/vk_allocator.hh"
 #include "pvk/internal/device_impl.hh"
 #include "pvk/internal/device_queue_string.hh"
 #include "pvk/internal/layer_utils.hh"
 #include "pvk/internal/log_utils.hh"
 #include "pvk/internal/result.hh"
 #include "pvk/internal/string_pack.hh"
+#include "pvk/internal/vk_allocator.hh"
 #include "pvk/internal/vk_api.hh"
 
 constexpr float DEFAULT_QUEUE_PRIORITY = 1.0;
 
 #define IMPL Impl::cast_from(*this)
 
+using vkQueueIndex_t = decltype(VkQueueFamilyProperties::queueCount);
+
+/*
+ * based on
+ * https://stackoverflow.com/questions/43526647/decltype-of-function-parameter
+ * for vkGetPhysicalDeviceQueueFamilyProperties
+ */
+template <typename FN>
+struct get_vkGetPhysicalDeviceQueueFamilyProperties_arg_type;
+
+template <
+    typename ARGT_Device_t,
+    typename ARGT_NB_QUEUE_FAMS,
+    typename ARGT_P_QS>
+struct get_vkGetPhysicalDeviceQueueFamilyProperties_arg_type<void (*)(
+    ARGT_Device_t *, ARGT_NB_QUEUE_FAMS *, ARGT_P_QS *)>
+{
+    using arg_2_type = ARGT_NB_QUEUE_FAMS;
+};
+
+using vkQueueFamIndex_t =
+    typename get_vkGetPhysicalDeviceQueueFamilyProperties_arg_type<
+        decltype(vkGetPhysicalDeviceQueueFamilyProperties)>::arg_2_type;
+
+static_assert(
+    std::is_same_v<uint32_t, vkQueueFamIndex_t>,
+    "Implementation of Vulkan does not follow the spec about max queue family "
+    "index type");
+
 namespace pvk {
+
+namespace {
+void dump_queue_families(
+    const std::vector<VkQueueFamilyProperties> &families, Logger &l)
+{
+    for (vkQueueFamIndex_t q_fam_idx = 0; q_fam_idx < families.size();
+         q_fam_idx++) {
+        auto &family = families[q_fam_idx];
+        if (family.queueCount == 0) {
+            l.warning("No single queue in Queue family #{}", q_fam_idx);
+            continue;
+        }
+
+        VkQueueFlags raw_flags = family.queueFlags;
+
+        std::string queue_idx_title = std::format(
+            "Queue family #{} ({} {})",
+            q_fam_idx,
+            family.queueCount,
+            family.queueCount == 1 ? "queue" : "queues");
+        std::string queue_flags_str = "Raw flags: 0b" +
+            std::bitset<std::numeric_limits<VkQueueFlags>::digits>(raw_flags)
+                .to_string();
+
+        auto extract_flags =
+            [](decltype(raw_flags) flags) -> std::vector<std::string> {
+            std::vector<std::string> output;
+
+            constexpr auto bits = std::numeric_limits<decltype(flags)>::digits;
+            for (size_t bit_idx = 0; bit_idx < bits; bit_idx++) {
+                size_t bit_mask = 1;
+                bit_mask <<= bit_idx;
+                VkQueueFlagBits bit =
+                    static_cast<VkQueueFlagBits>(flags & bit_mask);
+                if (bit == 0) {
+                    continue;
+                }
+                output.emplace_back(
+                    std::format("bit {} - {}", bit_idx, vk_to_str(bit)));
+            }
+            return output;
+        };
+
+        size_t max_string =
+            std::max(queue_flags_str.size(), queue_idx_title.size());
+
+        std::vector<std::string> flags_strlist = extract_flags(raw_flags);
+
+        auto max_flag_str = std::ranges::max_element(
+            flags_strlist,
+            [](const auto &l, const auto &r) { return l.size() < r.size(); });
+        if (std::end(flags_strlist) != max_flag_str) {
+            max_string = std::max(max_string, max_flag_str->size());
+        }
+
+        l.info("{}", box_title(queue_idx_title, max_string));
+        l.info("{}", box_entry(queue_flags_str, max_string));
+        for (auto &flag_str : flags_strlist) {
+            l.info("{}", box_entry(flag_str, max_string));
+        }
+        l.info("{}", box_foot(max_string));
+    }
+}
+
+} // namespace
 
 bool Device::connect()
 {
@@ -41,6 +138,10 @@ bool Device::connect()
 
 bool Device::Impl::connect()
 {
+    static_assert(
+        std::is_same_v<Queue::FamilyIndex, vkQueueFamIndex_t>,
+        "Queue::FamilyIndex is not matching");
+
     if (m_device != VK_NULL_HANDLE) {
         l.warning("Connection already established: Ignore connect request");
         return false;
@@ -118,6 +219,8 @@ bool Device::Impl::connect()
     auto enabled_extension_names_ptrs = enabled_ext_names->get();
 
     std::vector<VkQueueFamilyProperties> families = get_queue_families();
+    dump_queue_families(families, l);
+
     if (families.size() == 0) {
         l.warning("No single queue family (WAT?)");
     }
@@ -130,67 +233,9 @@ bool Device::Impl::connect()
     std::vector<std::vector<float>> q_create_infos_priors_storage;
     q_create_infos_priors_storage.resize(families.size());
 
-    for (size_t q_fam_idx = 0; q_fam_idx < families.size(); q_fam_idx++) {
-        auto &family = families[q_fam_idx];
-        if (family.queueCount == 0) {
-            l.warning("No single queue in Queue family #{}", q_fam_idx);
-            continue;
-        }
-
-        VkQueueFlags raw_flags = family.queueFlags;
-
-        std::string queue_idx_title = std::format(
-            "Queue family #{} ({} {})",
-            q_fam_idx,
-            family.queueCount,
-            family.queueCount == 1 ? "queue" : "queues");
-        std::string queue_flags_str = "Raw flags: 0b" +
-            std::bitset<std::numeric_limits<VkQueueFlags>::digits>(raw_flags)
-                .to_string();
-
-        auto extract_flags =
-            [](decltype(raw_flags) flags) -> std::vector<std::string> {
-            std::vector<std::string> output;
-
-            constexpr auto bits = std::numeric_limits<decltype(flags)>::digits;
-            for (size_t bit_idx = 0; bit_idx < bits; bit_idx++) {
-                size_t bit_mask = 1;
-                bit_mask <<= bit_idx;
-                VkQueueFlagBits bit =
-                    static_cast<VkQueueFlagBits>(flags & bit_mask);
-                if (bit == 0) {
-                    continue;
-                }
-                output.emplace_back(
-                    std::format("bit {} - {}", bit_idx, vk_to_str(bit)));
-            }
-            return output;
-        };
-
-        size_t max_string =
-            std::max(queue_flags_str.size(), queue_idx_title.size());
-
-        std::vector<std::string> flags_strlist = extract_flags(raw_flags);
-
-        auto max_flag_str = std::ranges::max_element(
-            flags_strlist,
-            [](const auto &l, const auto &r) { return l.size() < r.size(); });
-        if (std::end(flags_strlist) != max_flag_str) {
-            max_string = std::max(max_string, max_flag_str->size());
-        }
-
-        l.info("{}", box_title(queue_idx_title, max_string));
-        l.info("{}", box_entry(queue_flags_str, max_string));
-        for (auto &flag_str : flags_strlist) {
-            l.info("{}", box_entry(flag_str, max_string));
-        }
-        l.info("{}", box_foot(max_string));
-
-        std::vector<std::string> q_info_box;
-    }
-
     std::ranges::fill(q_create_infos, empty_q_create_info);
-    for (size_t q_fam_idx = 0; q_fam_idx < families.size(); q_fam_idx++) {
+    for (vkQueueFamIndex_t q_fam_idx = 0; q_fam_idx < families.size();
+         q_fam_idx++) {
         VkQueueFamilyProperties &q_fam_props = families[q_fam_idx];
         VkDeviceQueueCreateInfo &q_create_info = q_create_infos[q_fam_idx];
         q_create_info.queueFamilyIndex = q_fam_idx;
@@ -226,7 +271,42 @@ bool Device::Impl::connect()
         return false;
     }
 
+    std::vector<Queue> queue_list;
+    vkQueueIndex_t total_queue_count = std::accumulate(
+        begin(families),
+        end(families),
+        0,
+        [](vkQueueIndex_t acc, const VkQueueFamilyProperties &family) {
+            return acc + family.queueCount;
+        });
+
+    queue_list.reserve(total_queue_count);
+
+    for (vkQueueFamIndex_t q_fam_idx = 0; q_fam_idx < families.size();
+         q_fam_idx++) {
+        const VkQueueFamilyProperties &q_fam = families[q_fam_idx];
+        vkQueueIndex_t current_qfam_nb_qs = q_fam.queueCount;
+
+        for (vkQueueIndex_t q_in_family_index = 0;
+             q_in_family_index < current_qfam_nb_qs;
+             q_in_family_index++) {
+
+            VkQueue next_queue{};
+
+            vkGetDeviceQueue(
+                new_logical_device, q_fam_idx, q_in_family_index, &next_queue);
+
+            Queue next_device_queue;
+            next_device_queue.queue = next_queue;
+            next_device_queue.family_idx = q_fam_idx;
+            next_device_queue.idx = q_in_family_index;
+
+            queue_list.emplace_back(std::move(next_device_queue));
+        }
+    }
+
     m_device = new_logical_device;
+    m_queues = std::move(queue_list);
 
     return true;
 }

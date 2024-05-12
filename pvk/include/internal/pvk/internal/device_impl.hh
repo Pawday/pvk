@@ -50,7 +50,8 @@ struct alignas(Device) Device::Impl
     Impl(Impl &&o) noexcept
         : l(std::move(o.l)), m_alloc(std::move(o.m_alloc)),
           m_device_meta(std::move(o.m_device_meta)),
-          m_phy_device(o.m_phy_device), m_device(o.m_device)
+          m_phy_device(o.m_phy_device), m_device(o.m_device),
+          m_queues(std::move(o.m_queues))
     {
         if (this == &o) {
             return;
@@ -140,6 +141,17 @@ struct alignas(Device) Device::Impl
 
     VkPhysicalDevice m_phy_device = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
+
+    struct Queue
+    {
+        using QueueIndex = uint32_t;
+        using FamilyIndex = uint32_t;
+        VkQueue queue;
+        FamilyIndex family_idx;
+        QueueIndex idx;
+    };
+
+    std::vector<Queue> m_queues;
 };
 
 } // namespace pvk
